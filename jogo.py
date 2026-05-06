@@ -16,9 +16,21 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = 80
         self.rect.y = HEIGHT - 40
 
-    def update(self):
-        pass
+    def flip_gravity(self):
+        self.gravity_dir *= -1
+        self.vel_y = 0
 
+    def update(self):
+        self.vel_y += 0.8 * self.gravity_dir
+        self.rect.y += self.vel_y
+
+        if self.rect.bottom >= HEIGHT:
+            self.rect.bottom = HEIGHT
+            self.vel_y = 0
+        if self.rect.top <= 0:
+            self.rect.top = 0
+            self.vel_y = 0
+            
 game = True
 clock = pygame.time.Clock()
 FPS = 30
@@ -43,5 +55,4 @@ while game:
     all_sprites.draw(window)
     pygame.display.update()
 
-pygame.quit() 
-
+pygame.quit()
