@@ -2,32 +2,46 @@ import pygame
 import random
 pygame.init()
 
-# ----- Gera tela principal
 WIDTH = 600
 HEIGHT = 400
 window = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Jogo sem nome')
 
-# ----- Inicia estruturas de dados
+class Player(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((40, 40))
+        self.image.fill((0, 200, 100))
+        self.rect = self.image.get_rect()
+        self.rect.x = 80
+        self.rect.y = HEIGHT - 40
+
+    def update(self):
+        pass
+
 game = True
 clock = pygame.time.Clock()
 FPS = 30
 
-# ===== Loop principal =====
+all_sprites = pygame.sprite.Group()
+player = Player()
+all_sprites.add(player)
+
 while game:
     clock.tick(FPS)
-    # ----- Trata eventos
+
     for event in pygame.event.get():
-        # ----- Verifica consequências
+
         if event.type == pygame.QUIT:
             game = False
 
-    # ----- Gera saídas
-    window.fill((255, 0, 255))  # Preenche com a cor branca
+    window.fill((255, 0, 255))
+    all_sprites.draw(window)
+    pygame.display.update()
 
-    # ----- Atualiza estado do jogo
-    pygame.display.update()  # Mostra o novo frame para o jogador
+    window.fill((30, 30, 30))
+    all_sprites.draw(window)
+    pygame.display.update()
 
-# ===== Finalização =====
-pygame.quit()  # Função do PyGame que finaliza os recursos utilizados
+pygame.quit() 
 
