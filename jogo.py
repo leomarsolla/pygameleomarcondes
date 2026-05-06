@@ -15,6 +15,8 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = 80
         self.rect.y = HEIGHT - 40
+        self.vel_y = 0
+        self.gravity_dir = 1
 
     def flip_gravity(self):
         self.gravity_dir *= -1
@@ -43,13 +45,13 @@ while game:
     clock.tick(FPS)
 
     for event in pygame.event.get():
-
         if event.type == pygame.QUIT:
             game = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                player.flip_gravity()
 
-    window.fill((255, 0, 255))
-    all_sprites.draw(window)
-    pygame.display.update()
+    all_sprites.update()
 
     window.fill((30, 30, 30))
     all_sprites.draw(window)
