@@ -3,18 +3,23 @@ import random
 pygame.init()
 
 # ----- Gera tela principal
-window = pygame.display.set_mode((600, 400))
+WIDTH = 600
+HEIGHT = 400
+window = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Jogo sem nome')
 
 # ----- Inicia estruturas de dados
 game = True
+clock = pygame.time.Clock()
+FPS = 30
 
 # ===== Loop principal =====
 while game:
+    clock.tick(FPS)
     # ----- Trata eventos
     for event in pygame.event.get():
         # ----- Verifica consequências
-        if event.type == pygame.KEYUP:
+        if event.type == pygame.QUIT:
             game = False
 
     # ----- Gera saídas
