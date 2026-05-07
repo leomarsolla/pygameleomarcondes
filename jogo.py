@@ -5,7 +5,7 @@ pygame.init()
 WIDTH = 600
 HEIGHT = 400
 window = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption('Jogo sem nome')
+pygame.display.set_caption('Defying Gravity')
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
