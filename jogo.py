@@ -24,6 +24,9 @@ PLAYER_KEYS = [
 
 KEY_NAMES = ['SPACE', 'W', 'O', 'UP']
 
+SCROLL_SPEED = 8
+LANE_LINES_LENGTH = 1200
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, player_id, color, flip_key, lane_top, lane_bottom):
         pygame.sprite.Sprite.__init__(self)
@@ -32,12 +35,13 @@ class Player(pygame.sprite.Sprite):
         self.flip_key = flip_key
         self.lane_top = lane_top
         self.lane_bottom = lane_bottom
+        self.locked_lane = True
 
         self.image = pygame.Surface((40, 40))
         self.image.fill(color)
         self.rect = self.image.get_rect()
 
-        self.rect.x = 80
+        self.rect.x = 150
         self.rect.bottom = lane_bottom
 
         self.vel_y = 0
@@ -52,17 +56,24 @@ class Player(pygame.sprite.Sprite):
             self.on_ground = False
 
     def update(self, other_players):
-        self.vel_y += 0.8 * self.gravity_dir
+        self.vel_y += 1.2 * self.gravity_dir
         self.rect.y += self.vel_y
 
         landed = False
 
-        if self.rect.bottom >= self.lane_bottom:
-            self.rect.bottom = self.lane_bottom
+        if self.locked_lane:
+            top_limit = self.lane_top
+            bottom_limit = self.lane_bottom
+        else:
+            top_limit = 0
+            bottom_limit = HEIGHT
+
+        if self.rect.bottom >= bottom_limit:
+            self.rect.bottom = bottom_limit
             self.vel_y = 0
             landed = True
-        if self.rect.top <= self.lane_top:
-            self.rect.top = self.lane_top
+        if self.rect.top <= top_limit:
+            self.rect.top = top_limit
             self.vel_y = 0
             landed = True
 
@@ -79,11 +90,14 @@ class Player(pygame.sprite.Sprite):
 
         self.on_ground = landed
 
+
 clock = pygame.time.Clock()
 FPS = 30
 font_big = pygame.font.SysFont(None, 72)
+font_huge = pygame.font.SysFont(None, 180)
 font_med = pygame.font.SysFont(None, 42)
 font_small = pygame.font.SysFont(None, 28)
+
 
 def menu_selecao():
     selecionando = True
@@ -149,6 +163,7 @@ def menu_selecao():
 
     return num
 
+
 num_players = menu_selecao()
 
 all_sprites = pygame.sprite.Group()
@@ -161,6 +176,15 @@ for i in range(num_players):
     p = Player(i + 1, PLAYER_COLORS[i], PLAYER_KEYS[i], lane_top, lane_bottom)
     all_sprites.add(p)
     players.add(p)
+
+
+barrier_x = 220
+barrier_active = True
+countdown_start = pygame.time.get_ticks()
+COUNTDOWN_DURATION = 3000
+scrolling = False
+bg_offset = 0
+lane_lines_end = barrier_x + LANE_LINES_LENGTH
 
 game = True
 
@@ -175,17 +199,50 @@ while game:
                 if event.key == player.flip_key:
                     player.flip_gravity()
 
+    elapsed = pygame.time.get_ticks() - countdown_start
+    if barrier_active and elapsed >= COUNTDOWN_DURATION:
+        barrier_active = False
+        scrolling = True
+
     for player in players:
         player.update(players)
+        if barrier_active and player.rect.right > barrier_x:
+            player.rect.right = barrier_x
 
-    window.fill((30, 30, 40))
+    if scrolling:
+        bg_offset = (bg_offset + SCROLL_SPEED) % 40
+        lane_lines_end -= SCROLL_SPEED
 
-    for i in range(1, num_players):
-        y = i * lane_height
-        pygame.draw.line(window, (200, 200, 200), (0, y), (WIDTH, y), 3)
+        for player in players:
+            if player.locked_lane and lane_lines_end <= player.rect.right:
+                player.locked_lane = False
 
-    for sprite in all_sprites:
+    window.fill((255, 240, 150))
+
+    for x in range(-40, WIDTH + 40, 40):
+        pygame.draw.line(window, (240, 220, 130), (x - bg_offset, 0), (x - bg_offset, HEIGHT), 1)
+
+    if lane_lines_end > 0:
+        for i in range(1, num_players):
+            y = i * lane_height
+            pygame.draw.line(window, (80, 80, 80), (0, y), (lane_lines_end, y), 4)
+
+    if barrier_active:
+        pygame.draw.rect(window, (40, 40, 40), (barrier_x, 0, 12, HEIGHT))
+        for stripe_y in range(0, HEIGHT, 30):
+            pygame.draw.rect(window, (255, 220, 0), (barrier_x, stripe_y, 12, 15))
+
+    for sprite in players:
         window.blit(sprite.image, sprite.rect)
+
+    if barrier_active:
+        secs_left = (COUNTDOWN_DURATION - elapsed) // 1000 + 1
+        if secs_left > 0:
+            num_text = font_huge.render(str(secs_left), True, (255, 60, 60))
+            window.blit(num_text, (WIDTH // 2 - num_text.get_width() // 2, HEIGHT // 2 - num_text.get_height() // 2))
+    elif elapsed < COUNTDOWN_DURATION + 800:
+        go_text = font_huge.render('GO!', True, (60, 200, 60))
+        window.blit(go_text, (WIDTH // 2 - go_text.get_width() // 2, HEIGHT // 2 - go_text.get_height() // 2))
 
     pygame.display.update()
 
