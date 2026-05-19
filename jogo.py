@@ -90,6 +90,19 @@ class Player(pygame.sprite.Sprite):
 
         self.on_ground = landed
 
+class Block(pygame.sprite.Sprite):
+    def __init__(self, x, y, width, height):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((width, height))
+        self.image.fill((80, 80, 80))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+    def update(self):
+        self.rect.x -= SCROLL_SPEED
+        if self.rect.right < 0:
+            self.kill()
 
 clock = pygame.time.Clock()
 FPS = 30
@@ -188,6 +201,10 @@ lane_lines_end = barrier_x + LANE_LINES_LENGTH
 
 game = True
 
+blocks = pygame.sprite.Group()
+BLOCK_INTERVAL = 1500
+last_block_time = pygame.time.get_ticks()
+
 while game:
     clock.tick(FPS)
 
@@ -212,10 +229,20 @@ while game:
     if scrolling:
         bg_offset = (bg_offset + SCROLL_SPEED) % 40
         lane_lines_end -= SCROLL_SPEED
-
+    
         for player in players:
             if player.locked_lane and lane_lines_end <= player.rect.right:
                 player.locked_lane = False
+
+        now = pygame.time.get_ticks()
+        if now - last_block_time > BLOCK_INTERVAL:
+            last_block_time = now
+            bw = random.randint(30, 80)  
+            bh = random.randint(40, 120)
+            by = random.randint(0, HEIGHT - bh) 
+            b = Block(WIDTH, by, bw, bh)
+            blocks.add(b)
+            all_sprites.add(b)
 
     window.fill((255, 240, 150))
 
@@ -232,9 +259,6 @@ while game:
         for stripe_y in range(0, HEIGHT, 30):
             pygame.draw.rect(window, (255, 220, 0), (barrier_x, stripe_y, 12, 15))
 
-    for sprite in players:
-        window.blit(sprite.image, sprite.rect)
-
     if barrier_active:
         secs_left = (COUNTDOWN_DURATION - elapsed) // 1000 + 1
         if secs_left > 0:
@@ -243,6 +267,13 @@ while game:
     elif elapsed < COUNTDOWN_DURATION + 800:
         go_text = font_huge.render('GO!', True, (60, 200, 60))
         window.blit(go_text, (WIDTH // 2 - go_text.get_width() // 2, HEIGHT // 2 - go_text.get_height() // 2))
+
+    blocks.update()
+    for sprite in blocks:
+        window.blit(sprite.image, sprite.rect)
+
+    for sprite in players:
+        window.blit(sprite.image, sprite.rect)
 
     pygame.display.update()
 
