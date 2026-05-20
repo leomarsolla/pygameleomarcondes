@@ -55,7 +55,7 @@ class Player(pygame.sprite.Sprite):
             self.vel_y = 0
             self.on_ground = False
 
-    def update(self, other_players):
+    def update(self, other_players, blocks_group):
         self.vel_y += 1.2 * self.gravity_dir
         self.rect.y += self.vel_y
 
@@ -87,6 +87,22 @@ class Player(pygame.sprite.Sprite):
                     self.rect.top = other.rect.bottom
                 self.vel_y = 0
                 landed = True
+
+        for block in pygame.sprite.spritecollide(self, blocks_group, False):
+            if self.rect.right > block.rect.left and self.rect.left < block.rect.left:
+                self.rect.right = block.rect.left
+            elif self.rect.bottom > block.rect.top and self.rect.top < block.rect.top:
+                self.rect.bottom = block.rect.top
+                self.vel_y = 0
+                landed = True
+            elif self.rect.top < block.rect.bottom and self.rect.bottom > block.rect.bottom:
+                self.rect.top = block.rect.bottom
+                self.vel_y = 0
+                landed = True
+
+        if self.rect.left < 0:
+            self.alive = False
+            self.kill()
 
         self.on_ground = landed
 
@@ -222,7 +238,7 @@ while game:
         scrolling = True
 
     for player in players:
-        player.update(players)
+        player.update(players, blocks)
         if barrier_active and player.rect.right > barrier_x:
             player.rect.right = barrier_x
 
