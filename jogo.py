@@ -223,7 +223,7 @@ last_block_time = pygame.time.get_ticks()
 
 while game:
     clock.tick(FPS)
-
+        
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             game = False
@@ -238,6 +238,12 @@ while game:
         scrolling = True
 
     for player in players:
+        player.update(players, blocks)
+        if barrier_active and player.rect.right > barrier_x:
+            player.rect.right = barrier_x
+
+    if not any(p.alive for p in players) or len(players) == 0:
+        game = False
         player.update(players, blocks)
         if barrier_active and player.rect.right > barrier_x:
             player.rect.right = barrier_x
@@ -291,6 +297,22 @@ while game:
     for sprite in players:
         window.blit(sprite.image, sprite.rect)
 
+    pygame.display.update()
+
+showing_gameover = True
+while showing_gameover:
+    clock.tick(FPS)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            showing_gameover = False
+        if event.type == pygame.KEYDOWN:
+            showing_gameover = False
+
+    window.fill((20, 20, 20))
+    txt = font_huge.render('GAME OVER', True, (255, 60, 60))
+    window.blit(txt, (WIDTH // 2 - txt.get_width() // 2, HEIGHT // 2 - txt.get_height() // 2))
+    sub = font_small.render('Pressione qualquer tecla para sair', True, (200, 200, 200))
+    window.blit(sub, (WIDTH // 2 - sub.get_width() // 2, HEIGHT // 2 + 100))
     pygame.display.update()
 
 pygame.quit()
