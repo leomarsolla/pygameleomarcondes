@@ -30,6 +30,11 @@ NUM_LANES_VISUAL = 4
 TEMPO_ATE_FINISH = 30000
 LANE_LINES_LENGTH = 1500
 
+LANE_HEIGHT = HEIGHT // NUM_LANES_VISUAL
+LANE_TOPS = [i * LANE_HEIGHT for i in range(NUM_LANES_VISUAL)]
+LANE_BOTTOMS = [(i + 1) * LANE_HEIGHT for i in range(NUM_LANES_VISUAL)]
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, player_id, color, flip_key, lane_top, lane_bottom):
         pygame.sprite.Sprite.__init__(self)
@@ -41,6 +46,8 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = 150
         self.rect.bottom = lane_bottom
+        self.prev_x = self.rect.x
+        self.prev_y = self.rect.y
         self.vel_y = 0
         self.gravity_dir = 1
         self.on_ground = True
@@ -54,6 +61,9 @@ class Player(pygame.sprite.Sprite):
             self.on_ground = False
 
     def update(self, other_players, blocks_group, spikes_group, scrolling):
+        self.prev_x = self.rect.x
+        self.prev_y = self.rect.y
+
         self.vel_y += 1.2 * self.gravity_dir
         self.rect.y += self.vel_y
         landed = False
@@ -83,20 +93,29 @@ class Player(pygame.sprite.Sprite):
             overlap_right = block.rect.right - self.rect.left
             overlap_top = self.rect.bottom - block.rect.top
             overlap_bottom = block.rect.bottom - self.rect.top
-            min_overlap = min(overlap_left, overlap_right, overlap_top, overlap_bottom)
 
-            if min_overlap == overlap_top:
+            if self.vel_y > 0 and self.prev_y + self.rect.height <= block.rect.top + abs(self.vel_y):
                 self.rect.bottom = block.rect.top
                 self.vel_y = 0
                 landed = True
-            elif min_overlap == overlap_bottom:
+            elif self.vel_y < 0 and self.prev_y >= block.rect.bottom - abs(self.vel_y):
                 self.rect.top = block.rect.bottom
                 self.vel_y = 0
                 landed = True
-            elif min_overlap == overlap_left:
-                self.rect.right = block.rect.left
-            elif min_overlap == overlap_right:
-                self.rect.left = block.rect.right
+            else:
+                min_overlap = min(overlap_left, overlap_right, overlap_top, overlap_bottom)
+                if min_overlap == overlap_top:
+                    self.rect.bottom = block.rect.top
+                    self.vel_y = 0
+                    landed = True
+                elif min_overlap == overlap_bottom:
+                    self.rect.top = block.rect.bottom
+                    self.vel_y = 0
+                    landed = True
+                elif min_overlap == overlap_left:
+                    self.rect.right = block.rect.left
+                elif min_overlap == overlap_right:
+                    self.rect.left = block.rect.right
 
         for spike in pygame.sprite.spritecollide(self, spikes_group, False):
             self.alive = False
@@ -257,7 +276,49 @@ def chunk_tres_spikes(start_x):
     return obs, start_x + 530
 
 
-CHUNKS = [
+SPIKE_H = 20
+
+def chunk_inicial_todas_chao(start_x):
+    obs = []
+    for f in range(NUM_LANES_VISUAL):
+        y_spike = LANE_BOTTOMS[f] - SPIKE_H
+        obs.append(('spike', start_x, y_spike, 50, SPIKE_H, 'up'))
+    return obs, start_x + 350
+
+def chunk_inicial_todas_teto(start_x):
+    obs = []
+    for f in range(NUM_LANES_VISUAL):
+        y_spike = LANE_TOPS[f]
+        obs.append(('spike', start_x, y_spike, 50, SPIKE_H, 'down'))
+    return obs, start_x + 350
+
+def chunk_inicial_alternado(start_x):
+    obs = []
+    for f in range(NUM_LANES_VISUAL):
+        if f % 2 == 0:
+            y_spike = LANE_BOTTOMS[f] - SPIKE_H
+            obs.append(('spike', start_x, y_spike, 50, SPIKE_H, 'up'))
+        else:
+            y_spike = LANE_TOPS[f]
+            obs.append(('spike', start_x, y_spike, 50, SPIKE_H, 'down'))
+    return obs, start_x + 350
+
+def chunk_inicial_zigzag_chao(start_x):
+    obs = []
+    for f in range(NUM_LANES_VISUAL):
+        y_spike = LANE_BOTTOMS[f] - SPIKE_H
+        obs.append(('spike', start_x + f * 120, y_spike, 50, SPIKE_H, 'up'))
+    return obs, start_x + 560
+
+def chunk_inicial_zigzag_teto(start_x):
+    obs = []
+    for f in range(NUM_LANES_VISUAL):
+        y_spike = LANE_TOPS[f]
+        obs.append(('spike', start_x + f * 120, y_spike, 50, SPIKE_H, 'down'))
+    return obs, start_x + 560
+
+
+CHUNKS_NORMAIS = [
     chunk_spike_chao,
     chunk_spike_teto,
     chunk_bloco_chao,
@@ -269,6 +330,14 @@ CHUNKS = [
     chunk_vazio,
     chunk_corredor_curto,
     chunk_tres_spikes,
+]
+
+CHUNKS_INICIAIS = [
+    chunk_inicial_todas_chao,
+    chunk_inicial_todas_teto,
+    chunk_inicial_alternado,
+    chunk_inicial_zigzag_chao,
+    chunk_inicial_zigzag_teto,
 ]
 
 
@@ -346,8 +415,9 @@ def tela_fim(mensagem, cor):
         pygame.display.update()
 
 
-def spawnar_chunk(prox_x, blocks, spikes, all_sprites):
-    chunk_func = random.choice(CHUNKS)
+def spawnar_chunk(prox_x, blocks, spikes, all_sprites, usar_iniciais=False):
+    pool = CHUNKS_INICIAIS if usar_iniciais else CHUNKS_NORMAIS
+    chunk_func = random.choice(pool)
     obs_list, novo_x = chunk_func(prox_x)
     for o in obs_list:
         if o[0] == 'block':
@@ -369,8 +439,6 @@ num_players = menu_selecao()
 all_sprites = pygame.sprite.Group()
 players = pygame.sprite.Group()
 
-visual_lane_height = HEIGHT // NUM_LANES_VISUAL
-
 posicoes_por_qnt = {
     1: [1],
     2: [0, 3],
@@ -380,8 +448,8 @@ posicoes_por_qnt = {
 faixas_escolhidas = posicoes_por_qnt[num_players]
 
 for i, faixa in enumerate(faixas_escolhidas):
-    lane_top = faixa * visual_lane_height
-    lane_bottom = (faixa + 1) * visual_lane_height
+    lane_top = LANE_TOPS[faixa]
+    lane_bottom = LANE_BOTTOMS[faixa]
     p = Player(i + 1, PLAYER_COLORS[i], PLAYER_KEYS[i], lane_top, lane_bottom)
     all_sprites.add(p)
     players.add(p)
@@ -400,7 +468,7 @@ prox_chunk_x = WIDTH + 200
 
 plataformas_iniciais = pygame.sprite.Group()
 for i in range(1, NUM_LANES_VISUAL):
-    y = i * visual_lane_height
+    y = i * LANE_HEIGHT
     plat = PlataformaInicial(y, LANE_LINES_LENGTH)
     plataformas_iniciais.add(plat)
     blocks.add(plat)
@@ -447,6 +515,13 @@ while game:
             fl = FinishLine(WIDTH + 100)
             finish_group.add(fl)
 
+            for b in list(blocks):
+                if not isinstance(b, PlataformaInicial) and b.rect.left > WIDTH:
+                    b.kill()
+            for s in list(spikes):
+                if s.rect.left > WIDTH:
+                    s.kill()
+
         for player in players:
             for fl in finish_group:
                 if player.rect.colliderect(fl.rect):
@@ -464,9 +539,16 @@ while game:
 
     if scrolling:
         bg_offset = (bg_offset + SCROLL_SPEED) % 40
-        prox_chunk_x -= SCROLL_SPEED
-        if prox_chunk_x <= WIDTH and not finish_spawned:
-            prox_chunk_x = spawnar_chunk(WIDTH + 50, blocks, spikes, all_sprites)
+        if not finish_spawned:
+            prox_chunk_x -= SCROLL_SPEED
+            if prox_chunk_x <= WIDTH:
+                plataforma_ainda_visivel = False
+                for plat in plataformas_iniciais:
+                    if plat.rect.right > WIDTH:
+                        plataforma_ainda_visivel = True
+                        break
+                usar_iniciais = plataforma_ainda_visivel
+                prox_chunk_x = spawnar_chunk(WIDTH + 50, blocks, spikes, all_sprites, usar_iniciais)
 
     window.fill((255, 240, 150))
     for x in range(-40, WIDTH + 40, 40):
