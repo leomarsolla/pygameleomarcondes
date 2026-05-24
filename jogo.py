@@ -3,11 +3,13 @@ import random
 
 pygame.init()
 
+# configurações da tela
 WIDTH = 800
 HEIGHT = 500
 window = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Defying Gravity')
 
+# cores e teclas de cada jogador
 PLAYER_COLORS = [
     (255, 80, 80),
     (70, 130, 255),
@@ -24,20 +26,19 @@ PLAYER_KEYS = [
 
 KEY_NAMES = ['SPACE', 'W', 'O', 'UP']
 
+# constantes do jogo
 SCROLL_SPEED = 8
 LANE_LINES_LENGTH = 1200
 PLAYER_SIZE = 40
 NUM_LANES_VISUAL = 4
 TEMPO_ATE_FINISH = 30000
 
+# classe do jogador
 class Player(pygame.sprite.Sprite):
     def __init__(self, player_id, color, flip_key, lane_top, lane_bottom):
         pygame.sprite.Sprite.__init__(self)
         self.player_id = player_id
         self.flip_key = flip_key
-        self.lane_top = lane_top
-        self.lane_bottom = lane_bottom
-        self.locked_lane = True
         self.image = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE))
         self.image.fill(color)
         self.color = color
@@ -50,6 +51,7 @@ class Player(pygame.sprite.Sprite):
         self.alive = True
         self.venceu = False
 
+    # inverte a gravidade quando aperta tecla
     def flip_gravity(self):
         if self.on_ground:
             self.gravity_dir *= -1
@@ -61,12 +63,8 @@ class Player(pygame.sprite.Sprite):
         self.rect.y += self.vel_y
         landed = False
 
-        if self.locked_lane:
-            top_limit = self.lane_top
-            bottom_limit = self.lane_bottom
-        else:
-            top_limit = 0
-            bottom_limit = HEIGHT
+        top_limit = 0
+        bottom_limit = HEIGHT
 
         if self.rect.bottom >= bottom_limit:
             self.rect.bottom = bottom_limit
@@ -130,12 +128,23 @@ class Block(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-
+        
     def update(self):
         self.rect.x -= SCROLL_SPEED
         if self.rect.right < -200:
             self.kill()
 
+class PlataformaInicial(pygame.sprite.Sprite):
+    def __init__(self, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((WIDTH * 3, 8))
+        self.image.fill((80, 80, 80))
+        self.rect = self.image.get_rect()
+        self.rect.x = 0
+        self.rect.y = y
+
+    def update(self):
+        pass
 
 class Spike(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height, pointing='up'):
@@ -422,7 +431,7 @@ for i, faixa in enumerate(faixas_escolhidas):
     p = Player(i + 1, PLAYER_COLORS[i], PLAYER_KEYS[i], lane_top, lane_bottom)
     all_sprites.add(p)
     players.add(p)
-
+    
 barrier_x = 220
 barrier_active = True
 countdown_start = pygame.time.get_ticks()
@@ -435,6 +444,13 @@ blocks = pygame.sprite.Group()
 spikes = pygame.sprite.Group()
 finish_group = pygame.sprite.Group()
 prox_chunk_x = WIDTH + 200
+
+plataformas_iniciais = pygame.sprite.Group()
+for i in range(1, NUM_LANES_VISUAL):
+    y = i * visual_lane_height
+    plat = PlataformaInicial(y)
+    plataformas_iniciais.add(plat)
+    blocks.add(plat)
 
 scroll_start_time = None
 finish_spawned = False
@@ -458,6 +474,8 @@ while game:
         barrier_active = False
         scrolling = True
         scroll_start_time = pygame.time.get_ticks()
+        for plat in plataformas_iniciais:
+            plat.kill()
 
     for player in players:
         player.update(players, blocks, spikes, scrolling)
@@ -494,9 +512,6 @@ while game:
     if scrolling:
         bg_offset = (bg_offset + SCROLL_SPEED) % 40
         lane_lines_end -= SCROLL_SPEED
-        for player in players:
-            if player.locked_lane and lane_lines_end <= player.rect.right:
-                player.locked_lane = False
 
         prox_chunk_x -= SCROLL_SPEED
         if prox_chunk_x <= WIDTH and not finish_spawned:
@@ -505,12 +520,6 @@ while game:
     window.fill((255, 240, 150))
     for x in range(-40, WIDTH + 40, 40):
         pygame.draw.line(window, (240, 220, 130), (x - bg_offset, 0), (x - bg_offset, HEIGHT), 1)
-
-    if lane_lines_end > 0:
-        for i in range(1, NUM_LANES_VISUAL):
-            y = i * visual_lane_height
-            line_end_x = min(lane_lines_end, WIDTH)
-            pygame.draw.line(window, (80, 80, 80), (0, y), (line_end_x, y), 4)
 
     if barrier_active:
         pygame.draw.rect(window, (40, 40, 40), (barrier_x, 0, 12, HEIGHT))
