@@ -3,13 +3,11 @@ import random
 
 pygame.init()
 
-# configurações da tela
 WIDTH = 800
 HEIGHT = 500
 window = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Defying Gravity')
 
-# cores e teclas de cada jogador
 PLAYER_COLORS = [
     (255, 80, 80),
     (70, 130, 255),
@@ -26,14 +24,12 @@ PLAYER_KEYS = [
 
 KEY_NAMES = ['SPACE', 'W', 'O', 'UP']
 
-# constantes do jogo
 SCROLL_SPEED = 8
-LANE_LINES_LENGTH = 1200
 PLAYER_SIZE = 40
 NUM_LANES_VISUAL = 4
 TEMPO_ATE_FINISH = 30000
+LANE_LINES_LENGTH = 1500
 
-# classe do jogador
 class Player(pygame.sprite.Sprite):
     def __init__(self, player_id, color, flip_key, lane_top, lane_bottom):
         pygame.sprite.Sprite.__init__(self)
@@ -46,12 +42,11 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = 150
         self.rect.bottom = lane_bottom
         self.vel_y = 0
-        self.gravity_dir = 1 # 1 cai para baixo, -1 para cima
+        self.gravity_dir = 1
         self.on_ground = True
         self.alive = True
         self.venceu = False
 
-    # inverte a gravidade quando aperta tecla
     def flip_gravity(self):
         if self.on_ground:
             self.gravity_dir *= -1
@@ -63,20 +58,15 @@ class Player(pygame.sprite.Sprite):
         self.rect.y += self.vel_y
         landed = False
 
-        # limite das tela
-        top_limit = 0
-        bottom_limit = HEIGHT
-
-        if self.rect.bottom >= bottom_limit:
-            self.rect.bottom = bottom_limit
+        if self.rect.bottom >= HEIGHT:
+            self.rect.bottom = HEIGHT
             self.vel_y = 0
             landed = True
-        if self.rect.top <= top_limit:
-            self.rect.top = top_limit
+        if self.rect.top <= 0:
+            self.rect.top = 0
             self.vel_y = 0
             landed = True
 
-        # colisão entre jogadores
         for other in other_players:
             if other is self or not other.alive:
                 continue
@@ -87,7 +77,7 @@ class Player(pygame.sprite.Sprite):
                     self.rect.top = other.rect.bottom
                 self.vel_y = 0
                 landed = True
-        # detecta por qual lado colidiu com o bloco usando a menor sobreposição
+
         for block in pygame.sprite.spritecollide(self, blocks_group, False):
             overlap_left = self.rect.right - block.rect.left
             overlap_right = block.rect.right - self.rect.left
@@ -112,8 +102,7 @@ class Player(pygame.sprite.Sprite):
             self.alive = False
             self.kill()
             return
-        
-        # morre se empurrado para fora da tela pela esquerda
+
         if scrolling and self.rect.right < 0:
             self.alive = False
             self.kill()
@@ -131,29 +120,34 @@ class Block(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        
+
     def update(self):
         self.rect.x -= SCROLL_SPEED
         if self.rect.right < -200:
             self.kill()
-# plataforma que divide as faixas antes do jogo começar
+
+
 class PlataformaInicial(pygame.sprite.Sprite):
-    def __init__(self, y):
+    def __init__(self, y, comprimento):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface((WIDTH * 3, 8))
+        self.image = pygame.Surface((comprimento, 8))
         self.image.fill((80, 80, 80))
         self.rect = self.image.get_rect()
         self.rect.x = 0
-        self.rect.y = y
+        self.rect.y = y - 4
+        self.scrolling = False
 
     def update(self):
-        pass
+        if self.scrolling:
+            self.rect.x -= SCROLL_SPEED
+            if self.rect.right < 0:
+                self.kill()
+
 
 class Spike(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height, pointing='up'):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface((width, height), pygame.SRCALPHA)
-        # desenha triângulos para formar os espinhos
         num_spikes = max(1, width // 20)
         spike_w = width / num_spikes
         for i in range(num_spikes):
@@ -244,66 +238,24 @@ def chunk_spike_e_bloco(start_x):
 def chunk_vazio(start_x):
     return [], start_x + 280
 
-def chunk_plataforma_espinho(start_x):
+def chunk_corredor_curto(start_x):
     obs = [
-        # plataforma longa com espinho no meio
-        ('block', start_x, HEIGHT // 2 - 10, 800, 20),
-        ('spike', start_x + 800, HEIGHT // 2 - 25, 80, 25, 'up'),
-        ('block', start_x + 880, HEIGHT // 2 - 10, 800, 20),
-        # espinhos no chão
-        ('spike', start_x + 150, HEIGHT - 25, 60, 25, 'up'),
-        ('spike', start_x + 600, HEIGHT - 25, 60, 25, 'up'),
-        ('spike', start_x + 1100, HEIGHT - 25, 60, 25, 'up'),
-        # espinhos no teto
-        ('spike', start_x + 350, 0, 60, 25, 'down'),
-        ('spike', start_x + 850, 0, 60, 25, 'down'),
-        ('spike', start_x + 1300, 0, 60, 25, 'down'),
-        # paredes na parte de cima
-        ('block', start_x + 450, HEIGHT // 2 - 120, 40, 110),
-        ('block', start_x + 1200, HEIGHT // 2 - 120, 40, 110),
-        # paredes na parte de baixo
-        ('block', start_x + 250, HEIGHT // 2 + 10, 40, 110),
-        ('block', start_x + 950, HEIGHT // 2 + 10, 40, 110),
+        ('block', start_x, 0, 50, 70),
+        ('block', start_x, HEIGHT - 70, 50, 70),
+        ('spike', start_x + 250, HEIGHT - 25, 50, 25, 'up'),
+        ('block', start_x + 450, 0, 50, 70),
+        ('block', start_x + 450, HEIGHT - 70, 50, 70),
     ]
-    return obs, start_x + 2000
+    return obs, start_x + 650
 
-def chunk_parede_espinhos(start_x):
+def chunk_tres_spikes(start_x):
     obs = [
-        ('spike', start_x, HEIGHT // 2 - 120, 50, 25, 'down'),
-        ('block', start_x, HEIGHT // 2 - 95, 50, 190),
-        ('spike', start_x, HEIGHT // 2 + 95, 50, 25, 'up'),
+        ('spike', start_x, HEIGHT - 25, 50, 25, 'up'),
+        ('spike', start_x + 180, 0, 50, 25, 'down'),
+        ('spike', start_x + 360, HEIGHT - 25, 50, 25, 'up'),
     ]
-    return obs, start_x + 280
+    return obs, start_x + 530
 
-def chunk_plataforma_meio(start_x):
-    obs = [
-        # plataforma longa no meio
-        ('block', start_x, HEIGHT // 2 - 10, 2000, 20),
-        # espinhos no chão
-        ('spike', start_x + 100, HEIGHT - 25, 60, 25, 'up'),
-        ('spike', start_x + 400, HEIGHT - 25, 60, 25, 'up'),
-        ('spike', start_x + 800, HEIGHT - 25, 60, 25, 'up'),
-        ('spike', start_x + 1200, HEIGHT - 25, 60, 25, 'up'),
-        # espinhos no teto
-        ('spike', start_x + 250, 0, 60, 25, 'down'),
-        ('spike', start_x + 600, 0, 60, 25, 'down'),
-        ('spike', start_x + 1000, 0, 60, 25, 'down'),
-        ('spike', start_x + 1400, 0, 60, 25, 'down'),
-        # paredes na parte de cima
-        ('block', start_x + 300, HEIGHT // 2 - 120, 40, 110),
-        ('block', start_x + 900, HEIGHT // 2 - 120, 40, 110),
-        # paredes na parte de baixo
-        ('block', start_x + 550, HEIGHT // 2 + 10, 40, 110),
-        ('block', start_x + 1150, HEIGHT // 2 + 10, 40, 110),
-    ]
-    return obs, start_x + 2200
-
-
-def chunk_parede_meio(start_x):
-    obs = [
-        ('block', start_x, HEIGHT // 2 - 95, 50, 190),
-    ]
-    return obs, start_x + 280
 
 CHUNKS = [
     chunk_spike_chao,
@@ -315,10 +267,8 @@ CHUNKS = [
     chunk_zigzag,
     chunk_spike_e_bloco,
     chunk_vazio,
-    chunk_plataforma_espinho,
-    chunk_parede_espinhos,
-    chunk_plataforma_meio,
-    chunk_parede_meio,
+    chunk_corredor_curto,
+    chunk_tres_spikes,
 ]
 
 
@@ -435,14 +385,13 @@ for i, faixa in enumerate(faixas_escolhidas):
     p = Player(i + 1, PLAYER_COLORS[i], PLAYER_KEYS[i], lane_top, lane_bottom)
     all_sprites.add(p)
     players.add(p)
-    
+
 barrier_x = 220
 barrier_active = True
 countdown_start = pygame.time.get_ticks()
 COUNTDOWN_DURATION = 3000
 scrolling = False
 bg_offset = 0
-lane_lines_end = barrier_x + LANE_LINES_LENGTH
 
 blocks = pygame.sprite.Group()
 spikes = pygame.sprite.Group()
@@ -452,7 +401,7 @@ prox_chunk_x = WIDTH + 200
 plataformas_iniciais = pygame.sprite.Group()
 for i in range(1, NUM_LANES_VISUAL):
     y = i * visual_lane_height
-    plat = PlataformaInicial(y)
+    plat = PlataformaInicial(y, LANE_LINES_LENGTH)
     plataformas_iniciais.add(plat)
     blocks.add(plat)
 
@@ -479,7 +428,7 @@ while game:
         scrolling = True
         scroll_start_time = pygame.time.get_ticks()
         for plat in plataformas_iniciais:
-            plat.kill()
+            plat.scrolling = True
 
     for player in players:
         player.update(players, blocks, spikes, scrolling)
@@ -515,8 +464,6 @@ while game:
 
     if scrolling:
         bg_offset = (bg_offset + SCROLL_SPEED) % 40
-        lane_lines_end -= SCROLL_SPEED
-
         prox_chunk_x -= SCROLL_SPEED
         if prox_chunk_x <= WIDTH and not finish_spawned:
             prox_chunk_x = spawnar_chunk(WIDTH + 50, blocks, spikes, all_sprites)
