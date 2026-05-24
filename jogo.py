@@ -50,45 +50,48 @@ class Player(pygame.sprite.Sprite):
         self.prev_y = self.rect.y
         self.vel_y = 0
         self.gravity_dir = 1
-        self.on_ground = True
+        self.tem_flip = True
+        self.estava_tocando = True
         self.alive = True
         self.venceu = False
 
     def flip_gravity(self):
-        if self.on_ground:
+        if self.tem_flip:
             self.gravity_dir *= -1
             self.vel_y = 0
-            self.on_ground = False
+            self.tem_flip = False
 
     def update(self, other_players, blocks_group, spikes_group, scrolling):
         self.prev_x = self.rect.x
         self.prev_y = self.rect.y
 
-        self.vel_y += 1.2 * self.gravity_dir
+        self.vel_y += 1.0 * self.gravity_dir
         self.rect.y += self.vel_y
-        landed = False
+        tocando_agora = False
 
         if self.rect.bottom >= HEIGHT:
             self.rect.bottom = HEIGHT
             self.vel_y = 0
-            landed = True
+            tocando_agora = True
         if self.rect.top <= 0:
             self.rect.top = 0
             self.vel_y = 0
-            landed = True
+            tocando_agora = True
 
         for other in other_players:
             if other is self or not other.alive:
                 continue
             if self.rect.colliderect(other.rect):
+                tocando_agora = True
                 if self.vel_y > 0:
                     self.rect.bottom = other.rect.top
                 elif self.vel_y < 0:
                     self.rect.top = other.rect.bottom
                 self.vel_y = 0
-                landed = True
 
         for block in pygame.sprite.spritecollide(self, blocks_group, False):
+            tocando_agora = True
+
             overlap_left = self.rect.right - block.rect.left
             overlap_right = block.rect.right - self.rect.left
             overlap_top = self.rect.bottom - block.rect.top
@@ -97,21 +100,17 @@ class Player(pygame.sprite.Sprite):
             if self.vel_y > 0 and self.prev_y + self.rect.height <= block.rect.top + abs(self.vel_y):
                 self.rect.bottom = block.rect.top
                 self.vel_y = 0
-                landed = True
             elif self.vel_y < 0 and self.prev_y >= block.rect.bottom - abs(self.vel_y):
                 self.rect.top = block.rect.bottom
                 self.vel_y = 0
-                landed = True
             else:
                 min_overlap = min(overlap_left, overlap_right, overlap_top, overlap_bottom)
                 if min_overlap == overlap_top:
                     self.rect.bottom = block.rect.top
                     self.vel_y = 0
-                    landed = True
                 elif min_overlap == overlap_bottom:
                     self.rect.top = block.rect.bottom
                     self.vel_y = 0
-                    landed = True
                 elif min_overlap == overlap_left:
                     self.rect.right = block.rect.left
                 elif min_overlap == overlap_right:
@@ -127,7 +126,10 @@ class Player(pygame.sprite.Sprite):
             self.kill()
             return
 
-        self.on_ground = landed
+        if tocando_agora and not self.estava_tocando:
+            self.tem_flip = True
+
+        self.estava_tocando = tocando_agora
 
 
 class Block(pygame.sprite.Sprite):
