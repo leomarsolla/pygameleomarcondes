@@ -26,6 +26,9 @@ KEY_NAMES = ['SPACE', 'W', 'O', 'UP']
 
 SCROLL_SPEED = 8
 LANE_LINES_LENGTH = 1200
+PLAYER_SIZE = 40
+NUM_LANES_VISUAL = 4
+TEMPO_ATE_FINISH = 30000
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, player_id, color, flip_key, lane_top, lane_bottom):
@@ -35,8 +38,9 @@ class Player(pygame.sprite.Sprite):
         self.lane_top = lane_top
         self.lane_bottom = lane_bottom
         self.locked_lane = True
-        self.image = pygame.Surface((40, 40))
+        self.image = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE))
         self.image.fill(color)
+        self.color = color
         self.rect = self.image.get_rect()
         self.rect.x = 150
         self.rect.bottom = lane_bottom
@@ -44,6 +48,7 @@ class Player(pygame.sprite.Sprite):
         self.gravity_dir = 1
         self.on_ground = True
         self.alive = True
+        self.venceu = False
 
     def flip_gravity(self):
         if self.on_ground:
@@ -51,16 +56,18 @@ class Player(pygame.sprite.Sprite):
             self.vel_y = 0
             self.on_ground = False
 
-    def update(self, other_players, blocks_group, spikes_group):
+    def update(self, other_players, blocks_group, spikes_group, scrolling):
         self.vel_y += 1.2 * self.gravity_dir
         self.rect.y += self.vel_y
         landed = False
+
         if self.locked_lane:
             top_limit = self.lane_top
             bottom_limit = self.lane_bottom
         else:
             top_limit = 0
             bottom_limit = HEIGHT
+
         if self.rect.bottom >= bottom_limit:
             self.rect.bottom = bottom_limit
             self.vel_y = 0
@@ -69,6 +76,7 @@ class Player(pygame.sprite.Sprite):
             self.rect.top = top_limit
             self.vel_y = 0
             landed = True
+
         for other in other_players:
             if other is self or not other.alive:
                 continue
@@ -79,46 +87,77 @@ class Player(pygame.sprite.Sprite):
                     self.rect.top = other.rect.bottom
                 self.vel_y = 0
                 landed = True
+
         for block in pygame.sprite.spritecollide(self, blocks_group, False):
-            if self.rect.right > block.rect.left and self.rect.left < block.rect.left:
-                self.rect.right = block.rect.left
-            elif self.rect.bottom > block.rect.top and self.rect.top < block.rect.top:
+            overlap_left = self.rect.right - block.rect.left
+            overlap_right = block.rect.right - self.rect.left
+            overlap_top = self.rect.bottom - block.rect.top
+            overlap_bottom = block.rect.bottom - self.rect.top
+            min_overlap = min(overlap_left, overlap_right, overlap_top, overlap_bottom)
+
+            if min_overlap == overlap_top:
                 self.rect.bottom = block.rect.top
                 self.vel_y = 0
                 landed = True
-            elif self.rect.top < block.rect.bottom and self.rect.bottom > block.rect.bottom:
+            elif min_overlap == overlap_bottom:
                 self.rect.top = block.rect.bottom
                 self.vel_y = 0
                 landed = True
+            elif min_overlap == overlap_left:
+                self.rect.right = block.rect.left
+            elif min_overlap == overlap_right:
+                self.rect.left = block.rect.right
+
         for spike in pygame.sprite.spritecollide(self, spikes_group, False):
             self.alive = False
             self.kill()
-        if self.rect.left < 0:
+            return
+
+        if scrolling and self.rect.right < 0:
             self.alive = False
             self.kill()
+            return
+
         self.on_ground = landed
 
 
 class Block(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, height):
+    def __init__(self, x, y, width, height, color=(200, 100, 100)):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface((width, height))
-        self.image.fill((80, 80, 80))
+        self.image.fill(color)
+        pygame.draw.rect(self.image, (0, 0, 0), (0, 0, width, height), 2)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
 
     def update(self):
         self.rect.x -= SCROLL_SPEED
-        if self.rect.right < 0:
+        if self.rect.right < -200:
             self.kill()
 
 
 class Spike(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, height):
+    def __init__(self, x, y, width, height, pointing='up'):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface((width, height))
-        self.image.fill((255, 50, 50))
+        self.image = pygame.Surface((width, height), pygame.SRCALPHA)
+        num_spikes = max(1, width // 20)
+        spike_w = width / num_spikes
+        for i in range(num_spikes):
+            if pointing == 'up':
+                pts = [
+                    (i * spike_w, height),
+                    ((i + 0.5) * spike_w, 0),
+                    ((i + 1) * spike_w, height),
+                ]
+            else:
+                pts = [
+                    (i * spike_w, 0),
+                    ((i + 0.5) * spike_w, height),
+                    ((i + 1) * spike_w, 0),
+                ]
+            pygame.draw.polygon(self.image, (220, 50, 50), pts)
+            pygame.draw.polygon(self.image, (0, 0, 0), pts, 2)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -127,6 +166,83 @@ class Spike(pygame.sprite.Sprite):
         self.rect.x -= SCROLL_SPEED
         if self.rect.right < 0:
             self.kill()
+
+
+class FinishLine(pygame.sprite.Sprite):
+    def __init__(self, x):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((30, HEIGHT))
+        self.image.fill((255, 255, 255))
+        for row in range(HEIGHT // 15):
+            for col in range(2):
+                if (row + col) % 2 == 0:
+                    pygame.draw.rect(self.image, (0, 0, 0), (col * 15, row * 15, 15, 15))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = 0
+
+    def update(self):
+        self.rect.x -= SCROLL_SPEED
+
+
+def chunk_spike_chao(start_x):
+    return [('spike', start_x, HEIGHT - 25, 70, 25, 'up')], start_x + 220
+
+def chunk_spike_teto(start_x):
+    return [('spike', start_x, 0, 70, 25, 'down')], start_x + 220
+
+def chunk_bloco_chao(start_x):
+    altura = 70
+    return [('block', start_x, HEIGHT - altura, 55, altura)], start_x + 220
+
+def chunk_bloco_teto(start_x):
+    altura = 70
+    return [('block', start_x, 0, 55, altura)], start_x + 220
+
+def chunk_dois_blocos(start_x):
+    obs = [
+        ('block', start_x, HEIGHT - 60, 50, 60),
+        ('block', start_x + 230, 0, 50, 60),
+    ]
+    return obs, start_x + 430
+
+def chunk_spike_duplo(start_x):
+    obs = [
+        ('spike', start_x, HEIGHT - 25, 50, 25, 'up'),
+        ('spike', start_x + 180, 0, 50, 25, 'down'),
+    ]
+    return obs, start_x + 330
+
+def chunk_zigzag(start_x):
+    obs = [
+        ('block', start_x, HEIGHT - 65, 60, 65),
+        ('block', start_x + 200, 0, 60, 65),
+        ('block', start_x + 400, HEIGHT - 65, 60, 65),
+    ]
+    return obs, start_x + 580
+
+def chunk_spike_e_bloco(start_x):
+    obs = [
+        ('spike', start_x, HEIGHT - 25, 60, 25, 'up'),
+        ('block', start_x + 220, 0, 55, 70),
+    ]
+    return obs, start_x + 400
+
+def chunk_vazio(start_x):
+    return [], start_x + 280
+
+
+CHUNKS = [
+    chunk_spike_chao,
+    chunk_spike_teto,
+    chunk_bloco_chao,
+    chunk_bloco_teto,
+    chunk_dois_blocos,
+    chunk_spike_duplo,
+    chunk_zigzag,
+    chunk_spike_e_bloco,
+    chunk_vazio,
+]
 
 
 clock = pygame.time.Clock()
@@ -186,15 +302,59 @@ def menu_selecao():
     return num
 
 
+def tela_fim(mensagem, cor):
+    showing = True
+    while showing:
+        clock.tick(FPS)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                showing = False
+            if event.type == pygame.KEYDOWN:
+                showing = False
+        window.fill((20, 20, 20))
+        txt = font_huge.render(mensagem, True, cor)
+        window.blit(txt, (WIDTH // 2 - txt.get_width() // 2, HEIGHT // 2 - txt.get_height() // 2))
+        sub = font_small.render('Pressione qualquer tecla para sair', True, (200, 200, 200))
+        window.blit(sub, (WIDTH // 2 - sub.get_width() // 2, HEIGHT // 2 + 100))
+        pygame.display.update()
+
+
+def spawnar_chunk(prox_x, blocks, spikes, all_sprites):
+    chunk_func = random.choice(CHUNKS)
+    obs_list, novo_x = chunk_func(prox_x)
+    for o in obs_list:
+        if o[0] == 'block':
+            _, x, y, w, h = o
+            cor = random.choice([(220, 100, 100), (100, 200, 150), (240, 180, 80)])
+            b = Block(x, y, w, h, cor)
+            blocks.add(b)
+            all_sprites.add(b)
+        elif o[0] == 'spike':
+            _, x, y, w, h, direcao = o
+            s = Spike(x, y, w, h, direcao)
+            spikes.add(s)
+            all_sprites.add(s)
+    return novo_x
+
+
 num_players = menu_selecao()
 
 all_sprites = pygame.sprite.Group()
 players = pygame.sprite.Group()
 
-lane_height = HEIGHT // num_players
-for i in range(num_players):
-    lane_top = i * lane_height
-    lane_bottom = (i + 1) * lane_height
+visual_lane_height = HEIGHT // NUM_LANES_VISUAL
+
+posicoes_por_qnt = {
+    1: [1],
+    2: [0, 3],
+    3: [0, 1, 3],
+    4: [0, 1, 2, 3],
+}
+faixas_escolhidas = posicoes_por_qnt[num_players]
+
+for i, faixa in enumerate(faixas_escolhidas):
+    lane_top = faixa * visual_lane_height
+    lane_bottom = (faixa + 1) * visual_lane_height
     p = Player(i + 1, PLAYER_COLORS[i], PLAYER_KEYS[i], lane_top, lane_bottom)
     all_sprites.add(p)
     players.add(p)
@@ -209,8 +369,12 @@ lane_lines_end = barrier_x + LANE_LINES_LENGTH
 
 blocks = pygame.sprite.Group()
 spikes = pygame.sprite.Group()
-BLOCK_INTERVAL = 1500
-last_block_time = pygame.time.get_ticks()
+finish_group = pygame.sprite.Group()
+prox_chunk_x = WIDTH + 200
+
+scroll_start_time = None
+finish_spawned = False
+vencedor = None
 
 game = True
 
@@ -229,14 +393,39 @@ while game:
     if barrier_active and elapsed >= COUNTDOWN_DURATION:
         barrier_active = False
         scrolling = True
+        scroll_start_time = pygame.time.get_ticks()
 
     for player in players:
-        player.update(players, blocks, spikes)
+        player.update(players, blocks, spikes, scrolling)
         if barrier_active and player.rect.right > barrier_x:
             player.rect.right = barrier_x
 
-    if not any(p.alive for p in players) or len(players) == 0:
-        game = False
+    if scrolling:
+        blocks.update()
+        spikes.update()
+        finish_group.update()
+
+        tempo_corrida = pygame.time.get_ticks() - scroll_start_time
+
+        if not finish_spawned and tempo_corrida >= TEMPO_ATE_FINISH:
+            finish_spawned = True
+            fl = FinishLine(WIDTH + 100)
+            finish_group.add(fl)
+
+        for player in players:
+            for fl in finish_group:
+                if player.rect.colliderect(fl.rect):
+                    player.venceu = True
+                    vencedor = player
+                    game = False
+
+        vivos = [p for p in players if p.alive]
+        if num_players > 1 and len(vivos) == 1:
+            vencedor = vivos[0]
+            vencedor.venceu = True
+            game = False
+        elif len(vivos) == 0:
+            game = False
 
     if scrolling:
         bg_offset = (bg_offset + SCROLL_SPEED) % 40
@@ -244,59 +433,31 @@ while game:
         for player in players:
             if player.locked_lane and lane_lines_end <= player.rect.right:
                 player.locked_lane = False
-        now = pygame.time.get_ticks()
-        if now - last_block_time > BLOCK_INTERVAL:
-            last_block_time = now
 
-            tipo = random.randint(1, 4)
-            eh_spike = tipo != 4 and random.randint(1, 3) == 1
-
-            if tipo == 1:
-                largura = 40
-                altura = random.randint(80, HEIGHT // 2)
-                x = WIDTH
-                y = HEIGHT - altura
-            elif tipo == 2:
-                largura = 40
-                altura = random.randint(80, HEIGHT // 2)
-                x = WIDTH
-                y = 0
-            elif tipo == 3:
-                largura = 40
-                altura = random.randint(60, 120)
-                x = WIDTH
-                y = random.randint(HEIGHT // 4, HEIGHT // 2)
-            else:
-                largura = random.randint(80, 180)
-                altura = 20
-                x = WIDTH
-                y = random.randint(HEIGHT // 4, HEIGHT * 3 // 4)
-
-            if eh_spike:
-                obs = Spike(x, y, largura, altura)
-                spikes.add(obs)
-            else:
-                obs = Block(x, y, largura, altura)
-                blocks.add(obs)
-            all_sprites.add(obs)
+        prox_chunk_x -= SCROLL_SPEED
+        if prox_chunk_x <= WIDTH and not finish_spawned:
+            prox_chunk_x = spawnar_chunk(WIDTH + 50, blocks, spikes, all_sprites)
 
     window.fill((255, 240, 150))
     for x in range(-40, WIDTH + 40, 40):
         pygame.draw.line(window, (240, 220, 130), (x - bg_offset, 0), (x - bg_offset, HEIGHT), 1)
+
     if lane_lines_end > 0:
-        for i in range(1, num_players):
-            y = i * lane_height
-            pygame.draw.line(window, (80, 80, 80), (0, y), (lane_lines_end, y), 4)
+        for i in range(1, NUM_LANES_VISUAL):
+            y = i * visual_lane_height
+            line_end_x = min(lane_lines_end, WIDTH)
+            pygame.draw.line(window, (80, 80, 80), (0, y), (line_end_x, y), 4)
+
     if barrier_active:
         pygame.draw.rect(window, (40, 40, 40), (barrier_x, 0, 12, HEIGHT))
         for stripe_y in range(0, HEIGHT, 30):
             pygame.draw.rect(window, (255, 220, 0), (barrier_x, stripe_y, 12, 15))
 
-    blocks.update()
-    spikes.update()
     for sprite in blocks:
         window.blit(sprite.image, sprite.rect)
     for sprite in spikes:
+        window.blit(sprite.image, sprite.rect)
+    for sprite in finish_group:
         window.blit(sprite.image, sprite.rect)
     for sprite in players:
         window.blit(sprite.image, sprite.rect)
@@ -312,19 +473,16 @@ while game:
 
     pygame.display.update()
 
-showing_gameover = True
-while showing_gameover:
-    clock.tick(FPS)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            showing_gameover = False
-        if event.type == pygame.KEYDOWN:
-            showing_gameover = False
-    window.fill((20, 20, 20))
-    txt = font_huge.render('GAME OVER', True, (255, 60, 60))
-    window.blit(txt, (WIDTH // 2 - txt.get_width() // 2, HEIGHT // 2 - txt.get_height() // 2))
-    sub = font_small.render('Pressione qualquer tecla para sair', True, (200, 200, 200))
-    window.blit(sub, (WIDTH // 2 - sub.get_width() // 2, HEIGHT // 2 + 100))
-    pygame.display.update()
+if vencedor is not None:
+    nome_cores = {
+        (255, 80, 80): 'VERMELHO',
+        (70, 130, 255): 'AZUL',
+        (80, 220, 100): 'VERDE',
+        (255, 200, 0): 'AMARELO',
+    }
+    nome = nome_cores.get(vencedor.color, f'P{vencedor.player_id}')
+    tela_fim(f'{nome} VENCEU!', vencedor.color)
+else:
+    tela_fim('GAME OVER', (255, 60, 60))
 
 pygame.quit()
