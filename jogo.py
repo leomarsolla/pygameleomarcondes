@@ -247,19 +247,38 @@ while game:
         now = pygame.time.get_ticks()
         if now - last_block_time > BLOCK_INTERVAL:
             last_block_time = now
-            bw = random.randint(30, 80)
-            bh = random.randint(40, 120)
-            by = random.randint(0, HEIGHT - bh)
-            b = Block(WIDTH, by, bw, bh)
-            blocks.add(b)
-            all_sprites.add(b)
-            if random.randint(1, 3) == 1:
-                sw = random.randint(20, 50)
-                sh = random.randint(20, 50)
-                sy = random.randint(0, HEIGHT - sh)
-                s = Spike(WIDTH, sy, sw, sh)
-                spikes.add(s)
-                all_sprites.add(s)
+
+            tipo = random.randint(1, 4)
+            eh_spike = tipo != 4 and random.randint(1, 3) == 1
+
+            if tipo == 1:
+                largura = 40
+                altura = random.randint(80, HEIGHT // 2)
+                x = WIDTH
+                y = HEIGHT - altura
+            elif tipo == 2:
+                largura = 40
+                altura = random.randint(80, HEIGHT // 2)
+                x = WIDTH
+                y = 0
+            elif tipo == 3:
+                largura = 40
+                altura = random.randint(60, 120)
+                x = WIDTH
+                y = random.randint(HEIGHT // 4, HEIGHT // 2)
+            else:
+                largura = random.randint(80, 180)
+                altura = 20
+                x = WIDTH
+                y = random.randint(HEIGHT // 4, HEIGHT * 3 // 4)
+
+            if eh_spike:
+                obs = Spike(x, y, largura, altura)
+                spikes.add(obs)
+            else:
+                obs = Block(x, y, largura, altura)
+                blocks.add(obs)
+            all_sprites.add(obs)
 
     window.fill((255, 240, 150))
     for x in range(-40, WIDTH + 40, 40):
