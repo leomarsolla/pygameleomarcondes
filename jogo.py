@@ -231,6 +231,66 @@ def chunk_spike_e_bloco(start_x):
 def chunk_vazio(start_x):
     return [], start_x + 280
 
+def chunk_plataforma_espinho(start_x):
+    obs = [
+        # plataforma longa com espinho no meio
+        ('block', start_x, HEIGHT // 2 - 10, 800, 20),
+        ('spike', start_x + 800, HEIGHT // 2 - 25, 80, 25, 'up'),
+        ('block', start_x + 880, HEIGHT // 2 - 10, 800, 20),
+        # espinhos no chão
+        ('spike', start_x + 150, HEIGHT - 25, 60, 25, 'up'),
+        ('spike', start_x + 600, HEIGHT - 25, 60, 25, 'up'),
+        ('spike', start_x + 1100, HEIGHT - 25, 60, 25, 'up'),
+        # espinhos no teto
+        ('spike', start_x + 350, 0, 60, 25, 'down'),
+        ('spike', start_x + 850, 0, 60, 25, 'down'),
+        ('spike', start_x + 1300, 0, 60, 25, 'down'),
+        # paredes na parte de cima
+        ('block', start_x + 450, HEIGHT // 2 - 120, 40, 110),
+        ('block', start_x + 1200, HEIGHT // 2 - 120, 40, 110),
+        # paredes na parte de baixo
+        ('block', start_x + 250, HEIGHT // 2 + 10, 40, 110),
+        ('block', start_x + 950, HEIGHT // 2 + 10, 40, 110),
+    ]
+    return obs, start_x + 2000
+
+def chunk_parede_espinhos(start_x):
+    obs = [
+        ('spike', start_x, HEIGHT // 2 - 120, 50, 25, 'down'),
+        ('block', start_x, HEIGHT // 2 - 95, 50, 190),
+        ('spike', start_x, HEIGHT // 2 + 95, 50, 25, 'up'),
+    ]
+    return obs, start_x + 280
+
+def chunk_plataforma_meio(start_x):
+    obs = [
+        # plataforma longa no meio
+        ('block', start_x, HEIGHT // 2 - 10, 2000, 20),
+        # espinhos no chão
+        ('spike', start_x + 100, HEIGHT - 25, 60, 25, 'up'),
+        ('spike', start_x + 400, HEIGHT - 25, 60, 25, 'up'),
+        ('spike', start_x + 800, HEIGHT - 25, 60, 25, 'up'),
+        ('spike', start_x + 1200, HEIGHT - 25, 60, 25, 'up'),
+        # espinhos no teto
+        ('spike', start_x + 250, 0, 60, 25, 'down'),
+        ('spike', start_x + 600, 0, 60, 25, 'down'),
+        ('spike', start_x + 1000, 0, 60, 25, 'down'),
+        ('spike', start_x + 1400, 0, 60, 25, 'down'),
+        # paredes na parte de cima
+        ('block', start_x + 300, HEIGHT // 2 - 120, 40, 110),
+        ('block', start_x + 900, HEIGHT // 2 - 120, 40, 110),
+        # paredes na parte de baixo
+        ('block', start_x + 550, HEIGHT // 2 + 10, 40, 110),
+        ('block', start_x + 1150, HEIGHT // 2 + 10, 40, 110),
+    ]
+    return obs, start_x + 2200
+
+
+def chunk_parede_meio(start_x):
+    obs = [
+        ('block', start_x, HEIGHT // 2 - 95, 50, 190),
+    ]
+    return obs, start_x + 280
 
 CHUNKS = [
     chunk_spike_chao,
@@ -242,6 +302,10 @@ CHUNKS = [
     chunk_zigzag,
     chunk_spike_e_bloco,
     chunk_vazio,
+    chunk_plataforma_espinho,
+    chunk_parede_espinhos,
+    chunk_plataforma_meio,
+    chunk_parede_meio,
 ]
 
 
