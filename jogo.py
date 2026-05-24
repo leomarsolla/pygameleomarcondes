@@ -46,7 +46,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = 150
         self.rect.bottom = lane_bottom
         self.vel_y = 0
-        self.gravity_dir = 1
+        self.gravity_dir = 1 # 1 cai para baixo, -1 para cima
         self.on_ground = True
         self.alive = True
         self.venceu = False
@@ -63,6 +63,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.y += self.vel_y
         landed = False
 
+        # limite das tela
         top_limit = 0
         bottom_limit = HEIGHT
 
@@ -75,6 +76,7 @@ class Player(pygame.sprite.Sprite):
             self.vel_y = 0
             landed = True
 
+        # colisão entre jogadores
         for other in other_players:
             if other is self or not other.alive:
                 continue
@@ -85,7 +87,7 @@ class Player(pygame.sprite.Sprite):
                     self.rect.top = other.rect.bottom
                 self.vel_y = 0
                 landed = True
-
+        # detecta por qual lado colidiu com o bloco usando a menor sobreposição
         for block in pygame.sprite.spritecollide(self, blocks_group, False):
             overlap_left = self.rect.right - block.rect.left
             overlap_right = block.rect.right - self.rect.left
@@ -110,7 +112,8 @@ class Player(pygame.sprite.Sprite):
             self.alive = False
             self.kill()
             return
-
+        
+        # morre se empurrado para fora da tela pela esquerda
         if scrolling and self.rect.right < 0:
             self.alive = False
             self.kill()
@@ -133,7 +136,7 @@ class Block(pygame.sprite.Sprite):
         self.rect.x -= SCROLL_SPEED
         if self.rect.right < -200:
             self.kill()
-
+# plataforma que divide as faixas antes do jogo começar
 class PlataformaInicial(pygame.sprite.Sprite):
     def __init__(self, y):
         pygame.sprite.Sprite.__init__(self)
@@ -150,6 +153,7 @@ class Spike(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height, pointing='up'):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface((width, height), pygame.SRCALPHA)
+        # desenha triângulos para formar os espinhos
         num_spikes = max(1, width // 20)
         spike_w = width / num_spikes
         for i in range(num_spikes):
