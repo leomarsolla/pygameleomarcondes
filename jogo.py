@@ -804,24 +804,28 @@ MAPAS_CONFIG = {
         'pool': [chunk_classico_a, chunk_classico_b, chunk_classico_c, chunk_classico_d],
         'cor_fundo': (255, 240, 150),
         'cor_linhas': (240, 220, 130),
+        'bg': 'bg_classico.png',
     },
     MAPA_AEREO: {
         'nome': 'AEREO',
         'pool': [chunk_aereo_a, chunk_aereo_b, chunk_aereo_c, chunk_aereo_d],
         'cor_fundo': (190, 220, 240),
         'cor_linhas': (170, 200, 220),
+        'bg': 'bg_aereo.png',
     },
     MAPA_CORREDOR: {
         'nome': 'CORREDOR',
         'pool': [chunk_corredor_a, chunk_corredor_b, chunk_corredor_c, chunk_corredor_d],
         'cor_fundo': (250, 200, 180),
         'cor_linhas': (230, 180, 160),
+        'bg': 'bg_corredor.png',
     },
     MAPA_SERRAS: {
         'nome': 'SERRAS',
         'pool': [chunk_serras_a, chunk_serras_b, chunk_serras_c, chunk_serras_d],
         'cor_fundo': (200, 200, 220),
         'cor_linhas': (180, 180, 200),
+        'bg': 'bg_serras.png',
     },
 }
 
@@ -1005,6 +1009,8 @@ def spawnar_chunk(prox_x, blocks, spikes, serras, lasers, boosts, buracos, all_s
 num_players = menu_selecao()
 mapa_escolhido = menu_mapa()
 config = MAPAS_CONFIG[mapa_escolhido]
+bg_image = pygame.image.load(config['bg']).convert()
+bg_image = pygame.transform.scale(bg_image, (WIDTH, HEIGHT))
 
 all_sprites = pygame.sprite.Group()
 players = pygame.sprite.Group()
@@ -1056,6 +1062,7 @@ for i in range(1, NUM_LANES_VISUAL):
 scroll_start_time = None
 finish_spawned = False
 vencedor = None
+bg_x = 0
 
 game = True
 
@@ -1148,6 +1155,9 @@ while game:
 
     if scrolling:
         bg_offset = (bg_offset + SCROLL_SPEED) % 40
+        bg_x -= SCROLL_SPEED
+        if bg_x <= -WIDTH:
+            bg_x += WIDTH
         if not finish_spawned:
             prox_chunk_x -= SCROLL_SPEED
             if prox_chunk_x <= WIDTH:
@@ -1162,9 +1172,8 @@ while game:
                     chunk_func = random.choice(config['pool'])
                 prox_chunk_x = spawnar_chunk(WIDTH + 50, blocks, spikes, serras, lasers, boosts, buracos, all_sprites, chunk_func, config['cor_fundo'])
 
-    window.fill(config['cor_fundo'])
-    for x in range(-40, WIDTH + 40, 40):
-        pygame.draw.line(window, config['cor_linhas'], (x - bg_offset, 0), (x - bg_offset, HEIGHT), 1)
+    window.blit(bg_image, (bg_x, 0))
+    window.blit(bg_image, (bg_x + WIDTH, 0))
 
     if barrier_active:
         pygame.draw.rect(window, (40, 40, 40), (barrier_x, 0, 12, HEIGHT))
