@@ -3,9 +3,10 @@ import math
 from config import *
 
 
+# o player
 class Player(pygame.sprite.Sprite):
-    def __init__(self, player_id, color, flip_key, lane_top, lane_bottom):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, player_id, color, flip_key, lane_top, lane_bottom):
+        pygame.sprite.Sprite._init_(self)
         self.player_id = player_id
         self.flip_key = flip_key
         nomes_img = {
@@ -15,6 +16,7 @@ class Player(pygame.sprite.Sprite):
             (255, 200, 0): 'amarelo',
         }
         cor_nome = nomes_img[color]
+        # 3 frames pra animacao
         self.frames = []
         for i in range(1, 4):
             f = pygame.image.load(f'assets/player_{cor_nome}_frame{i}.png').convert_alpha()
@@ -39,6 +41,7 @@ class Player(pygame.sprite.Sprite):
         self.venceu = False
         self.boost_timer = 0
 
+    # so vira a gravidade se tiver flip disponivel
     def flip_gravity(self):
         if self.tem_flip:
             self.gravity_dir *= -1
@@ -52,6 +55,7 @@ class Player(pygame.sprite.Sprite):
         self.prev_x = self.rect.x
         self.prev_y = self.rect.y
 
+        # durante o boost, anda pra direita ate o limite
         if self.boost_timer > 0:
             self.rect.x += BOOST_FORCA
             self.boost_timer -= 1
@@ -59,11 +63,15 @@ class Player(pygame.sprite.Sprite):
                 self.rect.x = PLAYER_MAX_X
 
         self.vel_y += 1.0 * self.gravity_dir
+
+        # troca o frame da animacao de tempos em tempos
         self.frame_timer += 1
         if self.frame_timer >= 8:
             self.frame_timer = 0
             self.frame_atual = (self.frame_atual + 1) % 3
             self.image_original = self.frames[self.frame_atual]
+
+        # se a gravidade ta invertida, vira a imagem de cabeca pra baixo
         if self.gravity_dir == -1:
             self.image = pygame.transform.flip(self.image_original, False, True)
         else:
@@ -72,6 +80,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.y += self.vel_y
         tocando_agora = False
 
+        # morre se sair muito da tela
         if self.rect.bottom < -PLAYER_SIZE * 2:
             self.alive = False
             self.kill()
@@ -81,6 +90,7 @@ class Player(pygame.sprite.Sprite):
             self.kill()
             return
 
+        # colisao com outros players
         for other in other_players:
             if other is self or not other.alive:
                 continue
@@ -92,6 +102,7 @@ class Player(pygame.sprite.Sprite):
                     self.rect.top = other.rect.bottom
                 self.vel_y = 0
 
+        # ve se tem buraco no chao ou no teto na altura do player
         sobre_buraco_chao = False
         sobre_buraco_teto = False
         for b in buracos_group:
@@ -102,7 +113,9 @@ class Player(pygame.sprite.Sprite):
                 if self.rect.right > b.rect.left and self.rect.left < b.rect.right:
                     sobre_buraco_teto = True
 
+        # colisao com blocos
         for block in pygame.sprite.spritecollide(self, blocks_group, False):
+            # se tem buraco no chao/teto, ignora a colisao ali
             if isinstance(block, ChaoTetoFixo):
                 if block.rect.y > HEIGHT // 2 and sobre_buraco_chao:
                     continue
@@ -116,6 +129,7 @@ class Player(pygame.sprite.Sprite):
             overlap_top = self.rect.bottom - block.rect.top
             overlap_bottom = block.rect.bottom - self.rect.top
 
+            # decide de qual lado o player bateu pra encaixar certinho
             if self.vel_y > 0 and self.prev_y + self.rect.height <= block.rect.top + abs(self.vel_y):
                 self.rect.bottom = block.rect.top
                 self.vel_y = 0
@@ -135,6 +149,7 @@ class Player(pygame.sprite.Sprite):
                 elif min_overlap == overlap_right:
                     self.rect.left = block.rect.right
 
+        # morre se encostar em espinho, serra ou laser
         for k in pygame.sprite.spritecollide(self, kills_group, False):
             if hasattr(k, 'ativo') and not k.ativo:
                 continue
@@ -142,20 +157,23 @@ class Player(pygame.sprite.Sprite):
             self.kill()
             return
 
+        # se for empurrado pra fora pela tela, morre
         if scrolling and self.rect.right < 0:
             self.alive = False
             self.kill()
             return
 
+        # recupera o flip quando encosta em algo dps de ter ficado no ar
         if tocando_agora and not self.estava_tocando:
             self.tem_flip = True
 
         self.estava_tocando = tocando_agora
 
 
+# bloco solido, pode usar imagem do mapa ou cor padrao
 class Block(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, height, bloco_img=None):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, y, width, height, bloco_img=None):
+        pygame.sprite.Sprite._init_(self)
         if bloco_img:
             self.image = pygame.transform.scale(bloco_img, (width, height))
         else:
@@ -171,9 +189,11 @@ class Block(pygame.sprite.Sprite):
         if self.rect.right < -200:
             self.kill()
 
+
+# bloco quadriculado cinza (n usado nos mapas atuais)
 class BlocoGrid(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, y):
+        pygame.sprite.Sprite._init_(self)
         size = 40
         self.image = pygame.Surface((size, size), pygame.SRCALPHA)
         pygame.draw.rect(self.image, (170, 170, 180), (0, 0, size, size))
@@ -190,9 +210,10 @@ class BlocoGrid(pygame.sprite.Sprite):
             self.kill()
 
 
+# plataforma marrom no meio da tela
 class Plataforma(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, altura=14):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, y, width, altura=14):
+        pygame.sprite.Sprite._init_(self)
         self.image = pygame.Surface((width, altura))
         self.image.fill((120, 80, 40))
         pygame.draw.rect(self.image, (60, 40, 20), (0, 0, width, altura), 2)
@@ -206,9 +227,10 @@ class Plataforma(pygame.sprite.Sprite):
             self.kill()
 
 
+# linhas cinzas que dividem as raias no comeco
 class PlataformaInicial(pygame.sprite.Sprite):
-    def __init__(self, y, comprimento):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, y, comprimento):
+        pygame.sprite.Sprite._init_(self)
         self.image = pygame.Surface((comprimento, 8))
         self.image.fill((80, 80, 80))
         self.rect = self.image.get_rect()
@@ -223,12 +245,14 @@ class PlataformaInicial(pygame.sprite.Sprite):
                 self.kill()
 
 
+# espinhos que matam
 class Spike(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, height, pointing='up'):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, y, width, height, pointing='up'):
+        pygame.sprite.Sprite._init_(self)
         self.image = pygame.Surface((width, height), pygame.SRCALPHA)
         num_spikes = max(1, width // 20)
         spike_w = width / num_spikes
+        # desenha varios triangulinhos lado a lado
         for i in range(num_spikes):
             if pointing == 'up':
                 pts = [
@@ -255,9 +279,10 @@ class Spike(pygame.sprite.Sprite):
             self.kill()
 
 
+# serra circular giratoria
 class Serra(pygame.sprite.Sprite):
-    def __init__(self, x, y, raio=22):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, y, raio=22):
+        pygame.sprite.Sprite._init_(self)
         self.raio = raio
         size = raio * 2 + 4
         self.center = (size // 2, size // 2)
@@ -269,6 +294,7 @@ class Serra(pygame.sprite.Sprite):
         self.rect.y = y
         self.ativo = True
 
+    # desenha os 8 dentes da serra na rotacao atual
     def _desenhar(self):
         size = self.raio * 2 + 4
         self.image = pygame.Surface((size, size), pygame.SRCALPHA)
@@ -294,9 +320,10 @@ class Serra(pygame.sprite.Sprite):
             self.kill()
 
 
+# laser vermelho, pode ser fixo ou pulsante
 class Laser(pygame.sprite.Sprite):
-    def __init__(self, x, y_top, altura, pulsante=False):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, y_top, altura, pulsante=False):
+        pygame.sprite.Sprite._init_(self)
         self.altura = altura
         self.pulsante = pulsante
         self.timer = 0
@@ -318,6 +345,7 @@ class Laser(pygame.sprite.Sprite):
 
     def update(self):
         self.rect.x -= SCROLL_SPEED
+        # pulsa: 30 frames ligado, 60 desligado
         if self.pulsante:
             self.timer += 1
             if self.ativo and self.timer >= 30:
@@ -332,9 +360,10 @@ class Laser(pygame.sprite.Sprite):
             self.kill()
 
 
+# seta amarela do boost
 class BoostArrow(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, y):
+        pygame.sprite.Sprite._init_(self)
         w, h = 50, 36
         self.image = pygame.Surface((w, h), pygame.SRCALPHA)
         pts = [
@@ -358,9 +387,10 @@ class BoostArrow(pygame.sprite.Sprite):
             self.kill()
 
 
+# linha de chegada xadrez
 class FinishLine(pygame.sprite.Sprite):
-    def __init__(self, x):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x):
+        pygame.sprite.Sprite._init_(self)
         self.image = pygame.Surface((30, HEIGHT))
         self.image.fill((255, 255, 255))
         for row in range(HEIGHT // 15):
@@ -375,9 +405,10 @@ class FinishLine(pygame.sprite.Sprite):
         self.rect.x -= SCROLL_SPEED
 
 
+# chao e teto que ficam parados (so a textura visual rola)
 class ChaoTetoFixo(pygame.sprite.Sprite):
-    def __init__(self, y):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, y):
+        pygame.sprite.Sprite._init_(self)
         self.image = pygame.Surface((WIDTH, 20))
         self.image.fill((100, 70, 40))
         self.rect = self.image.get_rect()
@@ -388,9 +419,10 @@ class ChaoTetoFixo(pygame.sprite.Sprite):
         pass
 
 
+# buraco no chao, deixa o player cair
 class BuracoChao(pygame.sprite.Sprite):
-    def __init__(self, x, width, cor_fundo):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, width, cor_fundo):
+        pygame.sprite.Sprite._init_(self)
         self.image = pygame.Surface((width, 22))
         self.image.fill(cor_fundo)
         self.rect = self.image.get_rect()
@@ -403,9 +435,10 @@ class BuracoChao(pygame.sprite.Sprite):
             self.kill()
 
 
+# buraco no teto, deixa o player subir
 class BuracoTeto(pygame.sprite.Sprite):
-    def __init__(self, x, width, cor_fundo):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, width, cor_fundo):
+        pygame.sprite.Sprite._init_(self)
         self.image = pygame.Surface((width, 22))
         self.image.fill(cor_fundo)
         self.rect = self.image.get_rect()
