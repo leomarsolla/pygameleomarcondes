@@ -162,14 +162,13 @@ def tela_fim(mensagem, cor, bg):
     return resultado
 
 
-def spawnar_chunk(prox_x, blocks, spikes, serras, lasers, boosts, buracos, all_sprites, chunk_func, cor_fundo):
+def spawnar_chunk(prox_x, blocks, spikes, serras, lasers, boosts, buracos, all_sprites, chunk_func, cor_fundo, bloco_img):
     obs_list, novo_x = chunk_func(prox_x)
     for o in obs_list:
         tipo = o[0]
         if tipo == 'block':
             _, x, y, w, h = o
-            cor = random.choice([(180, 110, 80), (110, 160, 130), (200, 160, 90)])
-            b = Block(x, y, w, h, cor)
+            b = Block(x, y, w, h, bloco_img)
             blocks.add(b); all_sprites.add(b)
         elif tipo == 'grid':
             _, x, y = o
@@ -214,6 +213,7 @@ def jogar(num_players, mapa_escolhido):
     teto_img = pygame.transform.flip(chao_img, False, True)
     buraco_img = pygame.image.load('assets/buraco.png').convert_alpha()
     buraco_img = pygame.transform.scale(buraco_img, (220, 20))
+    bloco_img = pygame.image.load(config['bloco']).convert_alpha()
 
     all_sprites = pygame.sprite.Group()
     players = pygame.sprite.Group()
@@ -328,7 +328,7 @@ def jogar(num_players, mapa_escolhido):
                 if prox_chunk_x <= WIDTH:
                     plataforma_ainda_visivel = any(plat.rect.right > WIDTH - 100 for plat in plataformas_iniciais)
                     chunk_func = random.choice(CHUNKS_INICIAIS) if plataforma_ainda_visivel else random.choice(config['pool'])
-                    prox_chunk_x = spawnar_chunk(WIDTH + 50, blocks, spikes, serras, lasers, boosts, buracos, all_sprites, chunk_func, config['cor_fundo'])
+                    prox_chunk_x = spawnar_chunk(WIDTH + 50, blocks, spikes, serras, lasers, boosts, buracos, all_sprites, chunk_func, config['cor_fundo'], bloco_img)
 
         window.blit(bg_image, (bg_x, 0))
         window.blit(bg_image, (bg_x + WIDTH, 0))

@@ -231,6 +231,7 @@ MAPAS_CONFIG = {
         'cor_fundo': (255, 240, 150),
         'bg': 'assets/bg_classico.png',
         'chao': 'assets/farm_ground_tile.png',
+        'bloco': 'assets/cerca.png',
     },
     MAPA_AEREO: {
         'nome': 'AEREO',
@@ -238,6 +239,7 @@ MAPAS_CONFIG = {
         'cor_fundo': (190, 220, 240),
         'bg': 'assets/bg_aereo.png',
         'chao': 'assets/cloud_ground_tile.png',
+        'bloco': 'assets/nuvem.png',
     },
     MAPA_CORREDOR: {
         'nome': 'CORREDOR',
@@ -245,6 +247,7 @@ MAPAS_CONFIG = {
         'cor_fundo': (250, 200, 180),
         'bg': 'assets/bg_corredor.png',
         'chao': 'assets/backrooms_floor_tile.png',
+        'bloco': 'assets/wall.png',
     },
     MAPA_SERRAS: {
         'nome': 'SERRAS',
@@ -252,5 +255,6 @@ MAPAS_CONFIG = {
         'cor_fundo': (200, 200, 220),
         'bg': 'assets/bg_serras.png',
         'chao': 'assets/wooden_floor_tile.png',
+        'bloco': 'assets/wood.png',
     },
 }

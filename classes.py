@@ -9,14 +9,22 @@ class Player(pygame.sprite.Sprite):
         self.player_id = player_id
         self.flip_key = flip_key
         nomes_img = {
-            (255, 80, 80): 'assets/player_vermelho.png',
-            (70, 130, 255): 'assets/player_azul.png',
-            (80, 220, 100): 'assets/player_verde.png',
-            (255, 200, 0): 'assets/player_amarelo.png',
+            (255, 80, 80): 'vermelho',
+            (70, 130, 255): 'azul',
+            (80, 220, 100): 'verde',
+            (255, 200, 0): 'amarelo',
         }
-        self.image = pygame.image.load(nomes_img[color]).convert_alpha()
-        self.image = pygame.transform.scale(self.image, (PLAYER_SIZE, PLAYER_SIZE))
+        cor_nome = nomes_img[color]
+        self.frames = []
+        for i in range(1, 4):
+            f = pygame.image.load(f'assets/player_{cor_nome}_frame{i}.png').convert_alpha()
+            f = pygame.transform.scale(f, (PLAYER_SIZE, PLAYER_SIZE))
+            self.frames.append(f)
+        self.frame_atual = 0
+        self.frame_timer = 0
+        self.image = self.frames[0]
         self.image_original = self.image.copy()
+    
         self.color = color
         self.rect = self.image.get_rect()
         self.rect.x = PLAYER_BASE_X
@@ -51,6 +59,11 @@ class Player(pygame.sprite.Sprite):
                 self.rect.x = PLAYER_MAX_X
 
         self.vel_y += 1.0 * self.gravity_dir
+        self.frame_timer += 1
+        if self.frame_timer >= 8:
+            self.frame_timer = 0
+            self.frame_atual = (self.frame_atual + 1) % 3
+            self.image_original = self.frames[self.frame_atual]
         if self.gravity_dir == -1:
             self.image = pygame.transform.flip(self.image_original, False, True)
         else:
@@ -141,11 +154,14 @@ class Player(pygame.sprite.Sprite):
 
 
 class Block(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, height, color=(200, 100, 100)):
+    def __init__(self, x, y, width, height, bloco_img=None):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface((width, height))
-        self.image.fill(color)
-        pygame.draw.rect(self.image, (0, 0, 0), (0, 0, width, height), 2)
+        if bloco_img:
+            self.image = pygame.transform.scale(bloco_img, (width, height))
+        else:
+            self.image = pygame.Surface((width, height))
+            self.image.fill((200, 100, 100))
+            pygame.draw.rect(self.image, (0, 0, 0), (0, 0, width, height), 2)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -154,7 +170,6 @@ class Block(pygame.sprite.Sprite):
         self.rect.x -= SCROLL_SPEED
         if self.rect.right < -200:
             self.kill()
-
 
 class BlocoGrid(pygame.sprite.Sprite):
     def __init__(self, x, y):
