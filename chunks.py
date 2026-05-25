@@ -2,6 +2,7 @@ from config import *
 from classes import *
 
 
+# So juntam os obstaculos numa lista, pra nao precisar repetir o append no codigo
 def add_block(obs, x, y, w, h):
     obs.append(('block', x, y, w, h))
 
@@ -30,6 +31,9 @@ def add_buraco_teto(obs, x, w):
     obs.append(('buraco_teto', x, w))
 
 
+# Cada chunk eh um pedaco do mapa. L eh o tamanho dele.
+
+# mapa classico---plataforma no meio com espinho em cima e embaixo, bloco e boost
 def chunk_classico_a(start_x):
     L = 780
     obs = []
@@ -72,6 +76,7 @@ def chunk_classico_d(start_x):
     return obs, start_x + L
 
 
+# usa buracos pra forcar a virar a gravidade
 def chunk_aereo_a(start_x):
     L = 880
     obs = []
@@ -112,6 +117,7 @@ def chunk_aereo_d(start_x):
     return obs, start_x + L
 
 
+#  paredes no chao e no teto formando um corredor central pra passar
 def chunk_corredor_a(start_x):
     L = 740
     obs = []
@@ -154,6 +160,7 @@ def chunk_corredor_d(start_x):
     return obs, start_x + L
 
 
+# serras girando matam no chao e no teto
 def chunk_serras_a(start_x):
     L = 760
     obs = []
@@ -194,6 +201,7 @@ def chunk_serras_d(start_x):
     return obs, start_x + L
 
 
+# chunks do comeco, mais faceis, pra dar tempo do player se posicionar
 def chunk_inicial_alt_a(start_x):
     L = 380
     obs = []
@@ -224,6 +232,7 @@ CHUNKS_INICIAIS = [
     chunk_inicial_alt_c, chunk_inicial_vazio,
 ]
 
+# config de cada mapa: chunks que ele usa, cor de fundo e as imagens
 MAPAS_CONFIG = {
     MAPA_CLASSICO: {
         'nome': 'CLASSICO',
