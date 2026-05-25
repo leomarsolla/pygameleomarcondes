@@ -1030,6 +1030,7 @@ bg_image = pygame.transform.scale(bg_image, (WIDTH, HEIGHT))
 chao_img = pygame.image.load(config['chao']).convert_alpha()
 teto_img = pygame.transform.flip(chao_img, False, True)
 buraco_img = pygame.image.load('buraco.png').convert_alpha()
+buraco_img = pygame.transform.scale(buraco_img, (220, 20))
 
 all_sprites = pygame.sprite.Group()
 players = pygame.sprite.Group()
@@ -1209,11 +1210,11 @@ while game:
         window.blit(sprite.image, sprite.rect)
     for sprite in buracos:
         if isinstance(sprite, BuracoChao):
-            x = sprite.rect.x + sprite.rect.width // 2 - 130
+            x = sprite.rect.x + sprite.rect.width // 2 - 110
             window.blit(buraco_img, (x, HEIGHT - 20))
         elif isinstance(sprite, BuracoTeto):
-                x = sprite.rect.x + sprite.rect.width // 2 - 130
-        window.blit(buraco_img, (x, 0))
+                x = sprite.rect.x + sprite.rect.width // 2 - 110
+                window.blit(buraco_img, (x, 0))
     for sprite in boosts:
         window.blit(sprite.image, sprite.rect)
     for sprite in spikes:
