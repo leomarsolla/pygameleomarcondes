@@ -4,8 +4,8 @@ from config import *
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, player_id, color, flip_key, lane_top, lane_bottom):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, player_id, color, flip_key, lane_top, lane_bottom):
+        pygame.sprite.Sprite._init_(self)
         self.player_id = player_id
         self.flip_key = flip_key
         nomes_img = {
@@ -154,8 +154,8 @@ class Player(pygame.sprite.Sprite):
 
 
 class Block(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, height, bloco_img=None):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, y, width, height, bloco_img=None):
+        pygame.sprite.Sprite._init_(self)
         if bloco_img:
             self.image = pygame.transform.scale(bloco_img, (width, height))
         else:
@@ -172,8 +172,8 @@ class Block(pygame.sprite.Sprite):
             self.kill()
 
 class BlocoGrid(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, y):
+        pygame.sprite.Sprite._init_(self)
         size = 40
         self.image = pygame.Surface((size, size), pygame.SRCALPHA)
         pygame.draw.rect(self.image, (170, 170, 180), (0, 0, size, size))
@@ -191,8 +191,8 @@ class BlocoGrid(pygame.sprite.Sprite):
 
 
 class Plataforma(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, altura=14):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, y, width, altura=14):
+        pygame.sprite.Sprite._init_(self)
         self.image = pygame.Surface((width, altura))
         self.image.fill((120, 80, 40))
         pygame.draw.rect(self.image, (60, 40, 20), (0, 0, width, altura), 2)
@@ -207,8 +207,8 @@ class Plataforma(pygame.sprite.Sprite):
 
 
 class PlataformaInicial(pygame.sprite.Sprite):
-    def __init__(self, y, comprimento):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, y, comprimento):
+        pygame.sprite.Sprite._init_(self)
         self.image = pygame.Surface((comprimento, 8))
         self.image.fill((80, 80, 80))
         self.rect = self.image.get_rect()
@@ -224,8 +224,8 @@ class PlataformaInicial(pygame.sprite.Sprite):
 
 
 class Spike(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, height, pointing='up'):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, y, width, height, pointing='up'):
+        pygame.sprite.Sprite._init_(self)
         self.image = pygame.Surface((width, height), pygame.SRCALPHA)
         num_spikes = max(1, width // 20)
         spike_w = width / num_spikes
@@ -256,8 +256,8 @@ class Spike(pygame.sprite.Sprite):
 
 
 class Serra(pygame.sprite.Sprite):
-    def __init__(self, x, y, raio=22):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, y, raio=22):
+        pygame.sprite.Sprite._init_(self)
         self.raio = raio
         size = raio * 2 + 4
         self.center = (size // 2, size // 2)
@@ -295,8 +295,8 @@ class Serra(pygame.sprite.Sprite):
 
 
 class Laser(pygame.sprite.Sprite):
-    def __init__(self, x, y_top, altura, pulsante=False):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, y_top, altura, pulsante=False):
+        pygame.sprite.Sprite._init_(self)
         self.altura = altura
         self.pulsante = pulsante
         self.timer = 0
@@ -333,8 +333,8 @@ class Laser(pygame.sprite.Sprite):
 
 
 class BoostArrow(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, y):
+        pygame.sprite.Sprite._init_(self)
         w, h = 50, 36
         self.image = pygame.Surface((w, h), pygame.SRCALPHA)
         pts = [
@@ -359,8 +359,8 @@ class BoostArrow(pygame.sprite.Sprite):
 
 
 class FinishLine(pygame.sprite.Sprite):
-    def __init__(self, x):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x):
+        pygame.sprite.Sprite._init_(self)
         self.image = pygame.Surface((30, HEIGHT))
         self.image.fill((255, 255, 255))
         for row in range(HEIGHT // 15):
@@ -376,8 +376,8 @@ class FinishLine(pygame.sprite.Sprite):
 
 
 class ChaoTetoFixo(pygame.sprite.Sprite):
-    def __init__(self, y):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, y):
+        pygame.sprite.Sprite._init_(self)
         self.image = pygame.Surface((WIDTH, 20))
         self.image.fill((100, 70, 40))
         self.rect = self.image.get_rect()
@@ -389,8 +389,8 @@ class ChaoTetoFixo(pygame.sprite.Sprite):
 
 
 class BuracoChao(pygame.sprite.Sprite):
-    def __init__(self, x, width, cor_fundo):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, width, cor_fundo):
+        pygame.sprite.Sprite._init_(self)
         self.image = pygame.Surface((width, 22))
         self.image.fill(cor_fundo)
         self.rect = self.image.get_rect()
@@ -404,8 +404,8 @@ class BuracoChao(pygame.sprite.Sprite):
 
 
 class BuracoTeto(pygame.sprite.Sprite):
-    def __init__(self, x, width, cor_fundo):
-        pygame.sprite.Sprite.__init__(self)
+    def _init_(self, x, width, cor_fundo):
+        pygame.sprite.Sprite._init_(self)
         self.image = pygame.Surface((width, 22))
         self.image.fill(cor_fundo)
         self.rect = self.image.get_rect()
