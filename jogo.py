@@ -1015,10 +1015,9 @@ mapa_escolhido = menu_mapa()
 config = MAPAS_CONFIG[mapa_escolhido]
 bg_image = pygame.image.load(config['bg']).convert()
 bg_image = pygame.transform.scale(bg_image, (WIDTH, HEIGHT))
-chao_img = pygame.image.load(config['chao']).convert()
+chao_img = pygame.image.load(config['chao']).convert_alpha()
 teto_img = pygame.transform.flip(chao_img, False, True)
-tubo_chao_img = pygame.image.load('tubo_chao.png').convert_alpha()
-tubo_teto_img = pygame.image.load('tubo_teto.png').convert_alpha()
+buraco_img = pygame.image.load('buraco.png').convert_alpha()
 
 all_sprites = pygame.sprite.Group()
 players = pygame.sprite.Group()
@@ -1198,11 +1197,11 @@ while game:
         window.blit(sprite.image, sprite.rect)
     for sprite in buracos:
         if isinstance(sprite, BuracoChao):
-            x = sprite.rect.x + sprite.rect.width // 2 - 30
-            window.blit(tubo_chao_img, (x, HEIGHT - 80))
+            x = sprite.rect.x + sprite.rect.width // 2 - 130
+            window.blit(buraco_img, (x, HEIGHT - 20))
         elif isinstance(sprite, BuracoTeto):
-            x = sprite.rect.x + sprite.rect.width // 2 - 30
-            window.blit(tubo_teto_img, (x, 0))
+                x = sprite.rect.x + sprite.rect.width // 2 - 130
+        window.blit(buraco_img, (x, 0))
     for sprite in boosts:
         window.blit(sprite.image, sprite.rect)
     for sprite in spikes:
