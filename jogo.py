@@ -26,6 +26,8 @@ font_tiny = pygame.font.SysFont(None, 22)
 def menu_selecao():
     selecionando = True
     num = None
+    pygame.mixer.music.load('assets/menu.mpeg')
+    pygame.mixer.music.play(-1)  # -1 = loop infinito
     while selecionando:
         clock.tick(FPS)
         for event in pygame.event.get():
@@ -214,6 +216,14 @@ def jogar(num_players, mapa_escolhido):
     buraco_img = pygame.image.load('assets/buraco.png').convert_alpha()
     buraco_img = pygame.transform.scale(buraco_img, (220, 20))
     bloco_img = pygame.image.load(config['bloco']).convert_alpha()
+    musicas = {
+        MAPA_CLASSICO: 'assets/fazenda.mpeg',
+        MAPA_AEREO: 'assets/aereo.mpeg',
+        MAPA_CORREDOR: 'assets/backrooms.mpeg',
+        MAPA_SERRAS: 'assets/serra.mpeg',
+    }
+    pygame.mixer.music.load(musicas[mapa_escolhido])
+    pygame.mixer.music.play(-1)
 
     all_sprites = pygame.sprite.Group()
     players = pygame.sprite.Group()
