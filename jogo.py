@@ -507,47 +507,42 @@ def chunk_classico_d(start_x):
 
 
 def chunk_aereo_a(start_x):
-    L = 860
+    L = 880
     obs = []
     add_plat(obs, start_x + 60, HEIGHT // 2 + 30, 480, 18)
-    add_spike(obs, start_x + 180, HEIGHT // 2 + 8, 80, 22, 'up')
-    add_buraco_chao(obs, start_x + 80, 260)
-    add_buraco_teto(obs, start_x + 400, 240)
-    add_block(obs, start_x + 600, HEIGHT // 2 - 60, 55, 60)
-    add_boost(obs, start_x + 750, HEIGHT - 90)
+    add_spike(obs, start_x + 200, HEIGHT // 2 + 8, 80, 22, 'up')
+    add_buraco_teto(obs, start_x + 80, 260)
+    add_buraco_chao(obs, start_x + 480, 260)
+    add_boost(obs, start_x + 800, HEIGHT - 90)
     return obs, start_x + L
 
 def chunk_aereo_b(start_x):
     L = 880
     obs = []
-    add_plat(obs, start_x + 60, HEIGHT // 2 - 8, 460, 22)
-    add_spike(obs, start_x + 120, HEIGHT // 2 - 30, 80, 22, 'up')
-    add_spike(obs, start_x + 340, HEIGHT // 2 + 14, 80, 22, 'down')
-    add_buraco_chao(obs, start_x + 60, 280)
-    add_buraco_teto(obs, start_x + 400, 280)
-    add_buraco_chao(obs, start_x + 580, 240)
+    add_plat(obs, start_x + 80, HEIGHT // 2 - 8, 460, 22)
+    add_spike(obs, start_x + 200, HEIGHT // 2 - 30, 80, 22, 'up')
+    add_buraco_teto(obs, start_x + 580, 240)
+    add_boost(obs, start_x + 800, HEIGHT - 90)
     return obs, start_x + L
 
 def chunk_aereo_c(start_x):
-    L = 860
+    L = 880
     obs = []
-    add_block(obs, start_x + 60, 20, 60, 100)
     add_plat(obs, start_x + 220, HEIGHT // 2 - 8, 420, 18)
-    add_spike(obs, start_x + 300, HEIGHT // 2 + 10, 80, 22, 'down')
-    add_buraco_chao(obs, start_x + 180, 260)
-    add_buraco_chao(obs, start_x + 500, 240)
-    add_buraco_teto(obs, start_x + 200, 220)
-    add_boost(obs, start_x + 700, 40)
+    add_spike(obs, start_x + 280, HEIGHT // 2 + 14, 80, 22, 'down')
+    add_buraco_chao(obs, start_x + 60, 260)
+    add_buraco_teto(obs, start_x + 500, 240)
+    add_boost(obs, start_x + 800, 40)
     return obs, start_x + L
 
 def chunk_aereo_d(start_x):
-    L = 880
+    L = 900
     obs = []
     add_plat(obs, start_x + 60, HEIGHT // 2 - 50, 250, 18)
-    add_plat(obs, start_x + 360, HEIGHT // 2 + 30, 280, 18)
-    add_buraco_chao(obs, start_x + 100, 240)
-    add_buraco_chao(obs, start_x + 440, 240)
-    add_buraco_teto(obs, start_x + 300, 280)
+    add_plat(obs, start_x + 400, HEIGHT // 2 + 30, 280, 18)
+    add_spike(obs, start_x + 500, HEIGHT // 2 + 8, 80, 22, 'up')
+    add_buraco_teto(obs, start_x + 100, 240)
+    add_buraco_chao(obs, start_x + 440, 280)
     return obs, start_x + L
 
 
@@ -766,7 +761,7 @@ def chunk_caos_d(start_x):
         add_grid(obs, start_x + 80 + col * 50, HEIGHT - 130)
     add_buraco_chao(obs, start_x + 220, 240)
     add_laser(obs, start_x + 480, 20, HEIGHT - 40, True)
-    add_serra(obs, start_x + 600, HEIGHT - 50)
+    add_serra(obs, start_x + 620, HEIGHT - 50)
     add_buraco_teto(obs, start_x + 580, 240)
     return obs, start_x + L
 
