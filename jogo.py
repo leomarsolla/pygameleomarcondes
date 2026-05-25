@@ -913,9 +913,9 @@ def menu_mapa():
     selecionando = True
     mapa = None
     cores_mapas = [
-        (220, 180, 60), (90, 160, 220), (100, 180, 90),
-        (220, 120, 80), (130, 130, 180), (180, 60, 200), (180, 30, 60),
+        (220, 180, 60), (90, 160, 220), (220, 120, 80), (130, 130, 180),
     ]
+    nomes_mapas = ['CLASSICO', 'AEREO', 'CORREDOR', 'SERRAS']
     while selecionando:
         clock.tick(FPS)
         for event in pygame.event.get():
@@ -924,35 +924,44 @@ def menu_mapa():
                 exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mx, my = event.pos
-                for i in range(7):
-                    col = i % 4
-                    row = i // 4
-                    box_x = 50 + col * 180
+                for i in range(4):
+                    col = i % 2
+                    row = i // 2
+                    box_x = 100 + col * 350
                     box_y = 160 + row * 160
-                    if box_x <= mx <= box_x + 160 and box_y <= my <= box_y + 140:
+                    if box_x <= mx <= box_x + 280 and box_y <= my <= box_y + 120:
                         mapa = i
                         selecionando = False
             if event.type == pygame.KEYDOWN:
                 if pygame.K_1 <= event.key <= pygame.K_4:
                     mapa = event.key - pygame.K_1
                     selecionando = False
-        window.fill((30, 40, 70))
-        titulo = font_big.render('ESCOLHA O MAPA', True, (255, 255, 255))
-        window.blit(titulo, (WIDTH // 2 - titulo.get_width() // 2, 40))
-        sub = font_small.render('Clique ou pressione 1 a 7', True, (220, 220, 220))
-        window.blit(sub, (WIDTH // 2 - sub.get_width() // 2, 110))
+
+        window.blit(bg_menu_mapa, (0, 0))
+
+        overlay = pygame.Surface((WIDTH, 100), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 160))
+        window.blit(overlay, (0, 0))
+
+        titulo = font_big.render('ESCOLHA O MAPA', True, (255, 220, 50))
+        window.blit(titulo, (WIDTH // 2 - titulo.get_width() // 2, 15))
+        sub = font_small.render('Clique ou pressione 1 a 4', True, (220, 220, 220))
+        window.blit(sub, (WIDTH // 2 - sub.get_width() // 2, 75))
+
         for i in range(4):
-            col = i % 4
-            row = i // 4
-            box_x = 50 + col * 180
+            col = i % 2
+            row = i // 2
+            box_x = 100 + col * 350
             box_y = 160 + row * 160
-            pygame.draw.rect(window, cores_mapas[i], (box_x, box_y, 160, 140), border_radius=15)
-            pygame.draw.rect(window, (255, 255, 255), (box_x, box_y, 160, 140), 3, border_radius=15)
+            s = pygame.Surface((280, 120), pygame.SRCALPHA)
+            s.fill((0, 0, 0, 120))
+            window.blit(s, (box_x, box_y))
+            pygame.draw.rect(window, cores_mapas[i], (box_x, box_y, 280, 120), 4, border_radius=12)
             num = font_big.render(str(i + 1), True, (255, 255, 255))
-            window.blit(num, (box_x + 80 - num.get_width() // 2, box_y + 15))
-            nome = MAPAS_CONFIG[i]['nome']
-            label = font_tiny.render(nome, True, (255, 255, 255))
-            window.blit(label, (box_x + 80 - label.get_width() // 2, box_y + 95))
+            window.blit(num, (box_x + 20, box_y + 20))
+            nome = font_med.render(nomes_mapas[i], True, cores_mapas[i])
+            window.blit(nome, (box_x + 140 - nome.get_width() // 2, box_y + 60))
+
         pygame.display.update()
     return mapa
 
