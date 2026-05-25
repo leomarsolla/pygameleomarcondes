@@ -41,11 +41,8 @@ LANE_BOTTOMS = [(i + 1) * LANE_HEIGHT for i in range(NUM_LANES_VISUAL)]
 
 MAPA_CLASSICO = 0
 MAPA_AEREO = 1
-MAPA_DENSO = 2
-MAPA_CORREDOR = 3
-MAPA_SERRAS = 4
-MAPA_LASERS = 5
-MAPA_CAOS = 6
+MAPA_CORREDOR = 2
+MAPA_SERRAS = 3
 
 
 class Player(pygame.sprite.Sprite):
@@ -814,12 +811,6 @@ MAPAS_CONFIG = {
         'cor_fundo': (190, 220, 240),
         'cor_linhas': (170, 200, 220),
     },
-    MAPA_DENSO: {
-        'nome': 'DENSO',
-        'pool': [chunk_denso_a, chunk_denso_b, chunk_denso_c, chunk_denso_d],
-        'cor_fundo': (180, 230, 170),
-        'cor_linhas': (160, 210, 150),
-    },
     MAPA_CORREDOR: {
         'nome': 'CORREDOR',
         'pool': [chunk_corredor_a, chunk_corredor_b, chunk_corredor_c, chunk_corredor_d],
@@ -831,18 +822,6 @@ MAPAS_CONFIG = {
         'pool': [chunk_serras_a, chunk_serras_b, chunk_serras_c, chunk_serras_d],
         'cor_fundo': (200, 200, 220),
         'cor_linhas': (180, 180, 200),
-    },
-    MAPA_LASERS: {
-        'nome': 'LASERS',
-        'pool': [chunk_lasers_a, chunk_lasers_b, chunk_lasers_c, chunk_lasers_d],
-        'cor_fundo': (40, 40, 70),
-        'cor_linhas': (60, 60, 90),
-    },
-    MAPA_CAOS: {
-        'nome': 'CAOS',
-        'pool': [chunk_caos_a, chunk_caos_b, chunk_caos_c, chunk_caos_d],
-        'cor_fundo': (60, 30, 60),
-        'cor_linhas': (80, 50, 80),
     },
 }
 
@@ -929,7 +908,7 @@ def menu_mapa():
                         mapa = i
                         selecionando = False
             if event.type == pygame.KEYDOWN:
-                if pygame.K_1 <= event.key <= pygame.K_7:
+                if pygame.K_1 <= event.key <= pygame.K_4:
                     mapa = event.key - pygame.K_1
                     selecionando = False
         window.fill((30, 40, 70))
@@ -937,7 +916,7 @@ def menu_mapa():
         window.blit(titulo, (WIDTH // 2 - titulo.get_width() // 2, 40))
         sub = font_small.render('Clique ou pressione 1 a 7', True, (220, 220, 220))
         window.blit(sub, (WIDTH // 2 - sub.get_width() // 2, 110))
-        for i in range(7):
+        for i in range(4):
             col = i % 4
             row = i // 4
             box_x = 50 + col * 180
