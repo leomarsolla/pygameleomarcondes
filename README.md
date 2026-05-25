@@ -1,3 +1,5 @@
 # Defying Gravity é um jogo para até 4 jogadores onde cada um controla um galo musculoso que corre sozinho por um corredor cheio de obstáculos. A única coisa que você faz é apertar um botão para inverter a gravidade, fazendo o galo pular do chão para o teto e vice versa. Blocos, espinhos, serras e buracos aparecem sem parar e se você travar em algum obstáculo o mapa vai te empurrando até você sair da tela e morrer. O último sobrevivente vence. Tem 4 mapas diferentes, e dá para jogar com até 3 amigos no mesmo teclado.
 
 # A inteligência artificial foi utilizada como ferramenta de apoio durante o desenvolvimento. Ela ajudou a dar ideias para mecânicas e elementos do jogo, identificar e corrigir erros no código antes de cada commit, gerou todas as imagens e sprites do jogo, desde os fundos de cada mapa até os personagens, e auxiliou no posicionamento correto dessas imagens dentro do jogo.
+
+# Link do video: https://www.youtube.com/watch?v=yxqOqMdnSOg
