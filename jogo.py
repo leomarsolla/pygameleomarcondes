@@ -999,7 +999,7 @@ def tela_fim(mensagem, cor, bg):
         overlay.fill((0, 0, 0, 120))
         window.blit(overlay, (0, 0))
 
-        txt = font_huge.render(mensagem, True, cor)
+        txt = font_big.render(mensagem, True, cor)
         window.blit(txt, (WIDTH // 2 - txt.get_width() // 2, 150))
 
         # botão jogar novamente
