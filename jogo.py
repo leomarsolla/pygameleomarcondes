@@ -8,6 +8,10 @@ WIDTH = 800
 HEIGHT = 500
 window = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Defying Gravity')
+bg_menu_players = pygame.image.load('chicken_bg.png').convert()
+bg_menu_mapa = pygame.image.load('maps_bg.png').convert()
+bg_vitoria = pygame.image.load('podium_bg.png').convert()
+bg_game_over = pygame.image.load('game_over_bg.png').convert()
 
 PLAYER_COLORS = [
     (255, 80, 80),
@@ -868,38 +872,39 @@ def menu_selecao():
                 mx, my = event.pos
                 for i in range(4):
                     box_x = 60 + i * 185
-                    box_y = 200
-                    if box_x <= mx <= box_x + 160 and box_y <= my <= box_y + 160:
+                    box_y = 320
+                    if box_x <= mx <= box_x + 160 and box_y <= my <= box_y + 80:
                         num = i + 1
                         selecionando = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1:
-                    num = 1
-                    selecionando = False
-                if event.key == pygame.K_2:
-                    num = 2
-                    selecionando = False
-                if event.key == pygame.K_3:
-                    num = 3
-                    selecionando = False
-                if event.key == pygame.K_4:
-                    num = 4
-                    selecionando = False
-        window.fill((90, 40, 130))
-        titulo = font_big.render('DEFYING GRAVITY', True, (255, 255, 255))
-        window.blit(titulo, (WIDTH // 2 - titulo.get_width() // 2, 60))
-        sub = font_small.render('Escolha quantos jogadores', True, (230, 230, 230))
-        window.blit(sub, (WIDTH // 2 - sub.get_width() // 2, 140))
+                if event.key == pygame.K_1: num = 1; selecionando = False
+                if event.key == pygame.K_2: num = 2; selecionando = False
+                if event.key == pygame.K_3: num = 3; selecionando = False
+                if event.key == pygame.K_4: num = 4; selecionando = False
+
+        window.blit(bg_menu_players, (0, 0))
+
+        # overlay escuro no topo
+        overlay = pygame.Surface((WIDTH, 120), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 150))
+        window.blit(overlay, (0, 0))
+
+        titulo = font_big.render('DEFYING GRAVITY', True, (255, 220, 50))
+        window.blit(titulo, (WIDTH // 2 - titulo.get_width() // 2, 20))
+        sub = font_small.render('Escolha quantos jogadores', True, (255, 255, 255))
+        window.blit(sub, (WIDTH // 2 - sub.get_width() // 2, 90))
+
         cores_box = [(200, 60, 60), (60, 120, 220), (60, 180, 90), (230, 180, 30)]
         for i in range(4):
             box_x = 60 + i * 185
-            box_y = 200
-            pygame.draw.rect(window, cores_box[i], (box_x, box_y, 160, 160), border_radius=20)
-            pygame.draw.rect(window, (255, 255, 255), (box_x, box_y, 160, 160), 4, border_radius=20)
+            box_y = 320
+            pygame.draw.rect(window, cores_box[i], (box_x, box_y, 160, 80), border_radius=12)
+            pygame.draw.rect(window, (255, 255, 255), (box_x, box_y, 160, 80), 3, border_radius=12)
             label = font_big.render(f'{i+1}P', True, (255, 255, 255))
-            window.blit(label, (box_x + 80 - label.get_width() // 2, box_y + 50))
+            window.blit(label, (box_x + 80 - label.get_width() // 2, box_y + 18))
+
         rodape = font_small.render('Clique ou pressione 1, 2, 3 ou 4', True, (220, 220, 220))
-        window.blit(rodape, (WIDTH // 2 - rodape.get_width() // 2, 420))
+        window.blit(rodape, (WIDTH // 2 - rodape.get_width() // 2, 430))
         pygame.display.update()
     return num
 
