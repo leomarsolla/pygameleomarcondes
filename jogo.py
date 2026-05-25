@@ -26,7 +26,7 @@ PLAYER_KEYS = [
 KEY_NAMES = ['SPACE', 'W', 'O', 'UP']
 
 SCROLL_SPEED = 8
-PLAYER_SIZE = 40
+PLAYER_SIZE = 60
 NUM_LANES_VISUAL = 4
 TEMPO_ATE_FINISH = 30000
 LANE_LINES_LENGTH = 1500
@@ -50,8 +50,15 @@ class Player(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.player_id = player_id
         self.flip_key = flip_key
-        self.image = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE))
-        self.image.fill(color)
+        nomes_img = {
+            (255, 80, 80): 'player_vermelho.png',
+            (70, 130, 255): 'player_azul.png',
+            (80, 220, 100): 'player_verde.png',
+            (255, 200, 0): 'player_amarelo.png',
+        }
+        self.image = pygame.image.load(nomes_img[color]).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (PLAYER_SIZE, PLAYER_SIZE))
+        self.image_original = self.image.copy()
         self.color = color
         self.rect = self.image.get_rect()
         self.rect.x = PLAYER_BASE_X
@@ -86,6 +93,11 @@ class Player(pygame.sprite.Sprite):
                 self.rect.x = PLAYER_MAX_X
 
         self.vel_y += 1.0 * self.gravity_dir
+        if self.gravity_dir == -1:
+            self.image = pygame.transform.flip(self.image_original, False, True)
+        else:
+            self.image = self.image_original.copy()
+            
         self.rect.y += self.vel_y
         tocando_agora = False
 
