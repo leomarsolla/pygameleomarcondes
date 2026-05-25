@@ -33,6 +33,7 @@ LANE_LINES_LENGTH = 1500
 PLAYER_BASE_X = 150
 BOOST_DURATION = 30
 BOOST_FORCA = 6
+PLAYER_MAX_X = WIDTH - PLAYER_SIZE - 20
 
 LANE_HEIGHT = HEIGHT // NUM_LANES_VISUAL
 LANE_TOPS = [i * LANE_HEIGHT for i in range(NUM_LANES_VISUAL)]
@@ -77,20 +78,15 @@ class Player(pygame.sprite.Sprite):
     def ativar_boost(self):
         self.boost_timer = BOOST_DURATION
 
-    def update(self, other_players, blocks_group, kills_group, scrolling):
+    def update(self, other_players, blocks_group, kills_group, buracos_group, scrolling):
         self.prev_x = self.rect.x
         self.prev_y = self.rect.y
 
         if self.boost_timer > 0:
             self.rect.x += BOOST_FORCA
             self.boost_timer -= 1
-            if self.rect.x > WIDTH - PLAYER_SIZE - 20:
-                self.rect.x = WIDTH - PLAYER_SIZE - 20
-        else:
-            if self.rect.x > PLAYER_BASE_X:
-                self.rect.x -= 2
-                if self.rect.x < PLAYER_BASE_X:
-                    self.rect.x = PLAYER_BASE_X
+            if self.rect.x > PLAYER_MAX_X:
+                self.rect.x = PLAYER_MAX_X
 
         self.vel_y += 1.0 * self.gravity_dir
         self.rect.y += self.vel_y
@@ -116,7 +112,23 @@ class Player(pygame.sprite.Sprite):
                     self.rect.top = other.rect.bottom
                 self.vel_y = 0
 
+        sobre_buraco_chao = False
+        sobre_buraco_teto = False
+        for b in buracos_group:
+            if isinstance(b, BuracoChao):
+                if self.rect.right > b.rect.left and self.rect.left < b.rect.right:
+                    sobre_buraco_chao = True
+            elif isinstance(b, BuracoTeto):
+                if self.rect.right > b.rect.left and self.rect.left < b.rect.right:
+                    sobre_buraco_teto = True
+
         for block in pygame.sprite.spritecollide(self, blocks_group, False):
+            if isinstance(block, ChaoTetoFixo):
+                if block.rect.y > HEIGHT // 2 and sobre_buraco_chao:
+                    continue
+                if block.rect.y < HEIGHT // 2 and sobre_buraco_teto:
+                    continue
+
             tocando_agora = True
 
             overlap_left = self.rect.right - block.rect.left
@@ -177,12 +189,15 @@ class Block(pygame.sprite.Sprite):
             self.kill()
 
 
-class Plataforma(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, altura=14):
+class BlocoGrid(pygame.sprite.Sprite):
+    def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface((width, altura))
-        self.image.fill((120, 80, 40))
-        pygame.draw.rect(self.image, (0, 0, 0), (0, 0, width, altura), 2)
+        size = 40
+        self.image = pygame.Surface((size, size), pygame.SRCALPHA)
+        pygame.draw.rect(self.image, (170, 170, 180), (0, 0, size, size))
+        pygame.draw.rect(self.image, (100, 100, 110), (0, 0, size, size), 3)
+        pygame.draw.line(self.image, (100, 100, 110), (0, 0), (size, size), 2)
+        pygame.draw.line(self.image, (100, 100, 110), (size, 0), (0, size), 2)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -193,31 +208,15 @@ class Plataforma(pygame.sprite.Sprite):
             self.kill()
 
 
-class PedacoChao(pygame.sprite.Sprite):
-    def __init__(self, x, width):
+class Plataforma(pygame.sprite.Sprite):
+    def __init__(self, x, y, width, altura=14):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface((width, 20))
-        self.image.fill((100, 70, 40))
-        pygame.draw.rect(self.image, (0, 0, 0), (0, 0, width, 20), 2)
+        self.image = pygame.Surface((width, altura))
+        self.image.fill((120, 80, 40))
+        pygame.draw.rect(self.image, (60, 40, 20), (0, 0, width, altura), 2)
         self.rect = self.image.get_rect()
         self.rect.x = x
-        self.rect.y = HEIGHT - 20
-
-    def update(self):
-        self.rect.x -= SCROLL_SPEED
-        if self.rect.right < -200:
-            self.kill()
-
-
-class PedacoTeto(pygame.sprite.Sprite):
-    def __init__(self, x, width):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface((width, 20))
-        self.image.fill((100, 70, 40))
-        pygame.draw.rect(self.image, (0, 0, 0), (0, 0, width, 20), 2)
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = 0
+        self.rect.y = y
 
     def update(self):
         self.rect.x -= SCROLL_SPEED
@@ -394,8 +393,54 @@ class FinishLine(pygame.sprite.Sprite):
         self.rect.x -= SCROLL_SPEED
 
 
+class ChaoTetoFixo(pygame.sprite.Sprite):
+    def __init__(self, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((WIDTH, 20))
+        self.image.fill((100, 70, 40))
+        self.rect = self.image.get_rect()
+        self.rect.x = 0
+        self.rect.y = y
+
+    def update(self):
+        pass
+
+
+class BuracoChao(pygame.sprite.Sprite):
+    def __init__(self, x, width, cor_fundo):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((width, 22))
+        self.image.fill(cor_fundo)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = HEIGHT - 21
+
+    def update(self):
+        self.rect.x -= SCROLL_SPEED
+        if self.rect.right < -200:
+            self.kill()
+
+
+class BuracoTeto(pygame.sprite.Sprite):
+    def __init__(self, x, width, cor_fundo):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((width, 22))
+        self.image.fill(cor_fundo)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = -1
+
+    def update(self):
+        self.rect.x -= SCROLL_SPEED
+        if self.rect.right < -200:
+            self.kill()
+
+
 def add_block(obs, x, y, w, h):
     obs.append(('block', x, y, w, h))
+
+def add_grid(obs, x, y):
+    obs.append(('grid', x, y))
 
 def add_spike(obs, x, y, w, h, direcao):
     obs.append(('spike', x, y, w, h, direcao))
@@ -412,425 +457,352 @@ def add_laser(obs, x, y_top, altura, pulsante=False):
 def add_boost(obs, x, y):
     obs.append(('boost', x, y))
 
-def add_chao(obs, x, w):
-    obs.append(('chao', x, w))
+def add_buraco_chao(obs, x, w):
+    obs.append(('buraco_chao', x, w))
 
-def add_teto(obs, x, w):
-    obs.append(('teto', x, w))
+def add_buraco_teto(obs, x, w):
+    obs.append(('buraco_teto', x, w))
 
 
 def chunk_classico_a(start_x):
-    L = 760
+    L = 780
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 50, HEIGHT - 80, 60, 60)
-    add_spike(obs, start_x + 250, 20, 60, 22, 'down')
-    add_plat(obs, start_x + 390, HEIGHT // 2 - 20, 130, 18)
-    add_block(obs, start_x + 580, HEIGHT - 80, 60, 60)
-    add_boost(obs, start_x + 690, HEIGHT - 90)
+    add_plat(obs, start_x + 60, HEIGHT // 2 - 8, 380, 16)
+    add_spike(obs, start_x + 100, HEIGHT // 2 - 30, 80, 22, 'up')
+    add_spike(obs, start_x + 280, HEIGHT // 2 + 8, 80, 22, 'down')
+    add_block(obs, start_x + 540, HEIGHT - 80, 60, 60)
+    add_boost(obs, start_x + 670, HEIGHT - 90)
     return obs, start_x + L
 
 def chunk_classico_b(start_x):
-    L = 720
+    L = 760
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_spike(obs, start_x + 60, HEIGHT - 42, 80, 22, 'up')
-    add_block(obs, start_x + 240, 20, 55, 80)
-    add_plat(obs, start_x + 380, HEIGHT - 150, 110, 14)
-    add_spike(obs, start_x + 540, HEIGHT - 42, 80, 22, 'up')
+    add_block(obs, start_x + 60, HEIGHT - 80, 60, 60)
+    add_spike(obs, start_x + 220, 20, 70, 22, 'down')
+    add_plat(obs, start_x + 360, HEIGHT // 2 - 8, 280, 16)
+    add_spike(obs, start_x + 440, HEIGHT // 2 - 30, 80, 22, 'up')
+    add_spike(obs, start_x + 600, HEIGHT - 42, 80, 22, 'up')
     return obs, start_x + L
 
 def chunk_classico_c(start_x):
     L = 740
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 40, HEIGHT - 90, 50, 70)
-    add_block(obs, start_x + 220, 20, 50, 70)
-    add_spike(obs, start_x + 360, HEIGHT - 42, 70, 22, 'up')
-    add_plat(obs, start_x + 510, HEIGHT // 2 + 20, 130, 18)
-    add_boost(obs, start_x + 670, HEIGHT - 90)
+    add_block(obs, start_x + 60, HEIGHT - 90, 55, 70)
+    add_spike(obs, start_x + 160, HEIGHT - 42, 60, 22, 'up')
+    add_block(obs, start_x + 280, 20, 55, 70)
+    add_spike(obs, start_x + 380, 20, 60, 22, 'down')
+    add_plat(obs, start_x + 500, HEIGHT // 2 + 30, 200, 16)
+    add_boost(obs, start_x + 640, HEIGHT - 90)
     return obs, start_x + L
 
 def chunk_classico_d(start_x):
-    L = 700
+    L = 760
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_plat(obs, start_x + 40, HEIGHT // 2 - 30, 150, 14)
-    add_spike(obs, start_x + 65, HEIGHT // 2 - 52, 70, 22, 'down')
-    add_block(obs, start_x + 280, HEIGHT - 70, 55, 50)
-    add_spike(obs, start_x + 430, 20, 70, 22, 'down')
-    add_plat(obs, start_x + 570, HEIGHT // 2 + 20, 110, 22)
+    add_plat(obs, start_x + 60, HEIGHT // 2 - 50, 320, 16)
+    add_spike(obs, start_x + 120, HEIGHT // 2 - 72, 80, 22, 'down')
+    add_spike(obs, start_x + 230, HEIGHT - 42, 70, 22, 'up')
+    add_block(obs, start_x + 460, HEIGHT - 70, 55, 50)
+    add_spike(obs, start_x + 600, 20, 80, 22, 'down')
     return obs, start_x + L
 
 
 def chunk_aereo_a(start_x):
-    L = 800
+    L = 860
     obs = []
-    add_chao(obs, start_x, 200)
-    add_chao(obs, start_x + 450, L - 450)
-    add_teto(obs, start_x, 350)
-    add_teto(obs, start_x + 540, L - 540)
-    add_block(obs, start_x + 60, HEIGHT - 100, 70, 80)
-    add_plat(obs, start_x + 230, HEIGHT // 2 + 10, 180, 14)
-    add_spike(obs, start_x + 280, HEIGHT // 2 - 4, 70, 22, 'down')
-    add_plat(obs, start_x + 470, HEIGHT // 2 - 50, 60, 30)
-    add_boost(obs, start_x + 670, HEIGHT - 90)
+    add_plat(obs, start_x + 60, HEIGHT // 2 + 30, 480, 18)
+    add_spike(obs, start_x + 180, HEIGHT // 2 + 8, 80, 22, 'up')
+    add_buraco_chao(obs, start_x + 80, 260)
+    add_buraco_teto(obs, start_x + 400, 240)
+    add_block(obs, start_x + 600, HEIGHT // 2 - 60, 55, 60)
+    add_boost(obs, start_x + 750, HEIGHT - 90)
     return obs, start_x + L
 
 def chunk_aereo_b(start_x):
-    L = 780
+    L = 880
     obs = []
-    add_chao(obs, start_x, 250)
-    add_chao(obs, start_x + 550, L - 550)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 80, HEIGHT - 90, 60, 70)
-    add_plat(obs, start_x + 270, HEIGHT // 2 - 10, 220, 18)
-    add_spike(obs, start_x + 340, HEIGHT // 2 - 32, 80, 22, 'down')
-    add_spike(obs, start_x + 590, 20, 60, 22, 'down')
+    add_plat(obs, start_x + 60, HEIGHT // 2 - 8, 460, 22)
+    add_spike(obs, start_x + 120, HEIGHT // 2 - 30, 80, 22, 'up')
+    add_spike(obs, start_x + 340, HEIGHT // 2 + 14, 80, 22, 'down')
+    add_buraco_chao(obs, start_x + 60, 280)
+    add_buraco_teto(obs, start_x + 400, 280)
+    add_buraco_chao(obs, start_x + 580, 240)
     return obs, start_x + L
 
 def chunk_aereo_c(start_x):
-    L = 820
+    L = 860
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, 200)
-    add_teto(obs, start_x + 480, L - 480)
-    add_block(obs, start_x + 40, 20, 60, 100)
-    add_plat(obs, start_x + 200, 140, 180, 14)
-    add_spike(obs, start_x + 250, 162, 70, 22, 'up')
-    add_plat(obs, start_x + 430, HEIGHT // 2 + 30, 80, 30)
-    add_boost(obs, start_x + 620, 40)
+    add_block(obs, start_x + 60, 20, 60, 100)
+    add_plat(obs, start_x + 220, HEIGHT // 2 - 8, 420, 18)
+    add_spike(obs, start_x + 300, HEIGHT // 2 + 10, 80, 22, 'down')
+    add_buraco_chao(obs, start_x + 180, 260)
+    add_buraco_chao(obs, start_x + 500, 240)
+    add_buraco_teto(obs, start_x + 200, 220)
+    add_boost(obs, start_x + 700, 40)
     return obs, start_x + L
 
 def chunk_aereo_d(start_x):
-    L = 800
+    L = 880
     obs = []
-    add_chao(obs, start_x, 220)
-    add_chao(obs, start_x + 380, 200)
-    add_chao(obs, start_x + 700, L - 700)
-    add_teto(obs, start_x + 100, 200)
-    add_teto(obs, start_x + 500, L - 500)
-    add_plat(obs, start_x + 220, HEIGHT // 2 - 50, 140, 14)
-    add_plat(obs, start_x + 410, HEIGHT // 2 + 30, 140, 14)
-    add_spike(obs, start_x + 580, 20, 60, 22, 'down')
+    add_plat(obs, start_x + 60, HEIGHT // 2 - 50, 250, 18)
+    add_plat(obs, start_x + 360, HEIGHT // 2 + 30, 280, 18)
+    add_buraco_chao(obs, start_x + 100, 240)
+    add_buraco_chao(obs, start_x + 440, 240)
+    add_buraco_teto(obs, start_x + 300, 280)
     return obs, start_x + L
 
 
 def chunk_denso_a(start_x):
     L = 720
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 30, HEIGHT - 70, 60, 50)
-    add_block(obs, start_x + 110, 20, 60, 70)
-    add_block(obs, start_x + 200, HEIGHT - 90, 60, 70)
-    add_block(obs, start_x + 280, 20, 60, 60)
-    add_spike(obs, start_x + 360, HEIGHT - 42, 70, 22, 'up')
-    add_block(obs, start_x + 470, 20, 60, 60)
-    add_plat(obs, start_x + 570, HEIGHT // 2 - 10, 110, 18)
+    for col in range(4):
+        add_grid(obs, start_x + 80 + col * 80, HEIGHT - 130)
+    for col in range(4):
+        add_grid(obs, start_x + 120 + col * 80, 90)
+    add_buraco_chao(obs, start_x + 440, 220)
+    add_boost(obs, start_x + 580, HEIGHT // 2 - 18)
     return obs, start_x + L
 
 def chunk_denso_b(start_x):
-    L = 700
+    L = 760
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 30, HEIGHT - 50, 55, 30)
-    add_block(obs, start_x + 105, HEIGHT - 80, 55, 60)
-    add_block(obs, start_x + 180, HEIGHT - 110, 55, 90)
-    add_block(obs, start_x + 270, 20, 55, 70)
-    add_block(obs, start_x + 360, HEIGHT - 60, 55, 40)
-    add_plat(obs, start_x + 460, HEIGHT // 2 - 10, 100, 22)
-    add_boost(obs, start_x + 600, HEIGHT - 90)
+    for col in range(5):
+        add_grid(obs, start_x + 60 + col * 80, HEIGHT // 2 - 60)
+    for col in range(5):
+        add_grid(obs, start_x + 100 + col * 80, HEIGHT // 2 + 20)
+    add_buraco_teto(obs, start_x + 80, 220)
     return obs, start_x + L
 
 def chunk_denso_c(start_x):
-    L = 680
+    L = 740
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 30, 20, 50, 40)
-    add_block(obs, start_x + 100, 20, 50, 70)
-    add_block(obs, start_x + 170, 20, 50, 100)
-    add_spike(obs, start_x + 260, HEIGHT - 42, 70, 22, 'up')
-    add_block(obs, start_x + 380, 20, 50, 80)
-    add_plat(obs, start_x + 480, HEIGHT // 2 + 20, 120, 18)
+    for col in range(3):
+        add_grid(obs, start_x + 80 + col * 50, HEIGHT - 90)
+        add_grid(obs, start_x + 80 + col * 50, HEIGHT - 50)
+    for col in range(3):
+        add_grid(obs, start_x + 320 + col * 50, 50)
+        add_grid(obs, start_x + 320 + col * 50, 90)
+    add_buraco_chao(obs, start_x + 320, 220)
+    add_plat(obs, start_x + 520, HEIGHT // 2 - 10, 180, 18)
+    add_boost(obs, start_x + 640, HEIGHT // 2 - 50)
     return obs, start_x + L
 
 def chunk_denso_d(start_x):
-    L = 660
+    L = 740
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 30, HEIGHT - 60, 50, 40)
-    add_block(obs, start_x + 100, 20, 50, 50)
-    add_block(obs, start_x + 170, HEIGHT - 70, 50, 50)
-    add_block(obs, start_x + 240, 20, 50, 50)
-    add_spike(obs, start_x + 330, HEIGHT - 42, 70, 22, 'up')
-    add_boost(obs, start_x + 460, HEIGHT // 2 - 18)
-    add_plat(obs, start_x + 540, HEIGHT - 100, 100, 22)
+    for col in range(4):
+        offset = (col % 2) * 40
+        add_grid(obs, start_x + 80 + col * 75, HEIGHT - 100 + offset)
+    for col in range(4):
+        offset = (col % 2) * 40
+        add_grid(obs, start_x + 100 + col * 75, 60 - offset)
+    add_buraco_teto(obs, start_x + 440, 220)
+    add_boost(obs, start_x + 620, HEIGHT - 90)
     return obs, start_x + L
 
 
 def chunk_corredor_a(start_x):
-    L = 720
+    L = 740
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 30, 20, 60, 90)
-    add_block(obs, start_x + 30, HEIGHT - 110, 60, 90)
-    add_spike(obs, start_x + 200, HEIGHT - 42, 80, 22, 'up')
-    add_block(obs, start_x + 360, 20, 60, 90)
-    add_block(obs, start_x + 360, HEIGHT - 110, 60, 90)
-    add_boost(obs, start_x + 530, HEIGHT // 2 - 18)
+    add_block(obs, start_x + 60, 20, 60, 110)
+    add_block(obs, start_x + 60, HEIGHT - 130, 60, 110)
+    add_buraco_chao(obs, start_x + 160, 220)
+    add_block(obs, start_x + 400, 20, 60, 110)
+    add_block(obs, start_x + 400, HEIGHT - 130, 60, 110)
+    add_boost(obs, start_x + 570, HEIGHT // 2 - 18)
     return obs, start_x + L
 
 def chunk_corredor_b(start_x):
-    L = 720
+    L = 740
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 30, 20, 55, 110)
-    add_spike(obs, start_x + 160, HEIGHT - 42, 70, 22, 'up')
-    add_block(obs, start_x + 300, HEIGHT - 130, 55, 110)
-    add_spike(obs, start_x + 430, 20, 70, 22, 'down')
-    add_block(obs, start_x + 570, 20, 55, 110)
+    add_block(obs, start_x + 60, 20, 55, 130)
+    add_buraco_chao(obs, start_x + 140, 220)
+    add_block(obs, start_x + 380, HEIGHT - 150, 55, 130)
+    add_buraco_teto(obs, start_x + 460, 220)
     return obs, start_x + L
 
 def chunk_corredor_c(start_x):
-    L = 700
+    L = 720
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 30, 20, 60, 100)
-    add_block(obs, start_x + 30, HEIGHT - 120, 60, 100)
-    add_plat(obs, start_x + 200, HEIGHT // 2 - 20, 130, 18)
-    add_spike(obs, start_x + 230, HEIGHT // 2 + 16, 80, 22, 'down')
-    add_block(obs, start_x + 400, 20, 60, 100)
-    add_block(obs, start_x + 400, HEIGHT - 120, 60, 100)
+    add_block(obs, start_x + 60, 20, 60, 120)
+    add_block(obs, start_x + 60, HEIGHT - 140, 60, 120)
+    add_plat(obs, start_x + 220, HEIGHT // 2 - 8, 250, 18)
+    add_buraco_chao(obs, start_x + 180, 220)
+    add_block(obs, start_x + 530, 20, 60, 120)
+    add_block(obs, start_x + 530, HEIGHT - 140, 60, 120)
     return obs, start_x + L
 
 def chunk_corredor_d(start_x):
-    L = 700
+    L = 740
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 30, HEIGHT - 110, 60, 90)
-    add_block(obs, start_x + 180, 20, 60, 90)
-    add_spike(obs, start_x + 320, HEIGHT - 42, 70, 22, 'up')
-    add_block(obs, start_x + 450, HEIGHT - 110, 60, 90)
-    add_boost(obs, start_x + 580, HEIGHT - 90)
+    add_block(obs, start_x + 60, HEIGHT - 130, 60, 110)
+    add_block(obs, start_x + 220, 20, 60, 110)
+    add_buraco_chao(obs, start_x + 320, 220)
+    add_block(obs, start_x + 580, HEIGHT - 130, 60, 110)
+    add_boost(obs, start_x + 670, HEIGHT - 90)
     return obs, start_x + L
 
 
 def chunk_serras_a(start_x):
     L = 760
     obs = []
-    add_chao(obs, start_x, 250)
-    add_chao(obs, start_x + 420, L - 420)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 40, HEIGHT - 80, 60, 60)
-    add_serra(obs, start_x + 200, HEIGHT - 50)
-    add_plat(obs, start_x + 320, HEIGHT // 2 - 20, 130, 18)
-    add_block(obs, start_x + 510, 20, 60, 60)
-    add_boost(obs, start_x + 650, HEIGHT - 90)
+    add_block(obs, start_x + 60, HEIGHT - 80, 60, 60)
+    add_serra(obs, start_x + 220, HEIGHT - 50)
+    add_plat(obs, start_x + 340, HEIGHT // 2 - 8, 180, 18)
+    add_buraco_chao(obs, start_x + 380, 220)
+    add_block(obs, start_x + 620, 20, 60, 60)
+    add_boost(obs, start_x + 700, HEIGHT - 90)
     return obs, start_x + L
 
 def chunk_serras_b(start_x):
-    L = 740
+    L = 760
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_serra(obs, start_x + 40, HEIGHT - 50)
-    add_block(obs, start_x + 180, 20, 55, 70)
-    add_serra(obs, start_x + 320, 6)
-    add_spike(obs, start_x + 460, HEIGHT - 42, 70, 22, 'up')
-    add_plat(obs, start_x + 580, HEIGHT // 2 + 20, 130, 18)
+    add_serra(obs, start_x + 60, HEIGHT - 50)
+    add_buraco_teto(obs, start_x + 180, 220)
+    add_serra(obs, start_x + 460, 6)
+    add_buraco_chao(obs, start_x + 540, 220)
     return obs, start_x + L
 
 def chunk_serras_c(start_x):
-    L = 740
+    L = 760
     obs = []
-    add_chao(obs, start_x, 200)
-    add_chao(obs, start_x + 380, L - 380)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 40, HEIGHT - 90, 50, 70)
-    add_serra(obs, start_x + 200, HEIGHT - 50)
-    add_serra(obs, start_x + 320, 6)
-    add_block(obs, start_x + 460, 20, 50, 70)
-    add_plat(obs, start_x + 580, HEIGHT // 2 - 20, 130, 22)
+    add_block(obs, start_x + 60, HEIGHT - 90, 50, 70)
+    add_serra(obs, start_x + 220, HEIGHT - 50)
+    add_buraco_teto(obs, start_x + 320, 220)
+    add_serra(obs, start_x + 580, 6)
     return obs, start_x + L
 
 def chunk_serras_d(start_x):
     L = 760
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_plat(obs, start_x + 30, HEIGHT // 2 + 30, 150, 14)
-    add_serra(obs, start_x + 220, HEIGHT // 2 + 5)
-    add_block(obs, start_x + 380, HEIGHT - 70, 55, 50)
-    add_serra(obs, start_x + 520, 6)
-    add_boost(obs, start_x + 660, 40)
+    add_plat(obs, start_x + 60, HEIGHT // 2 + 30, 150, 14)
+    add_serra(obs, start_x + 240, HEIGHT // 2 + 5)
+    add_buraco_chao(obs, start_x + 360, 220)
+    add_serra(obs, start_x + 580, 6)
+    add_boost(obs, start_x + 680, 40)
     return obs, start_x + L
 
 
 def chunk_lasers_a(start_x):
     L = 780
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 40, HEIGHT - 80, 60, 60)
-    add_laser(obs, start_x + 220, HEIGHT // 2 - 60, 120, False)
-    add_block(obs, start_x + 380, 20, 60, 60)
-    add_plat(obs, start_x + 520, HEIGHT // 2 + 30, 130, 18)
+    add_block(obs, start_x + 60, HEIGHT - 80, 60, 60)
+    add_buraco_chao(obs, start_x + 180, 220)
+    add_laser(obs, start_x + 440, HEIGHT // 2 - 60, 120, False)
+    add_block(obs, start_x + 580, 20, 60, 60)
+    add_plat(obs, start_x + 540, HEIGHT // 2 + 30, 130, 18)
     add_boost(obs, start_x + 690, HEIGHT - 90)
     return obs, start_x + L
 
 def chunk_lasers_b(start_x):
     L = 760
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_laser(obs, start_x + 100, 20, HEIGHT - 40, True)
-    add_spike(obs, start_x + 230, HEIGHT - 42, 70, 22, 'up')
-    add_block(obs, start_x + 360, 20, 55, 70)
-    add_laser(obs, start_x + 500, 20, HEIGHT - 40, True)
-    add_plat(obs, start_x + 600, HEIGHT // 2 + 20, 120, 18)
+    add_laser(obs, start_x + 120, 20, HEIGHT - 40, True)
+    add_buraco_chao(obs, start_x + 240, 220)
+    add_block(obs, start_x + 500, 20, 55, 70)
+    add_laser(obs, start_x + 620, 20, HEIGHT - 40, True)
     return obs, start_x + L
 
 def chunk_lasers_c(start_x):
     L = 780
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 40, HEIGHT - 70, 55, 50)
-    add_laser(obs, start_x + 180, HEIGHT // 2 - 80, 160, False)
-    add_plat(obs, start_x + 320, HEIGHT // 2 + 50, 130, 18)
-    add_laser(obs, start_x + 510, HEIGHT // 2 - 80, 160, False)
-    add_block(obs, start_x + 660, 20, 55, 60)
+    add_block(obs, start_x + 60, HEIGHT - 70, 55, 50)
+    add_laser(obs, start_x + 200, HEIGHT // 2 - 80, 160, False)
+    add_buraco_teto(obs, start_x + 340, 220)
+    add_plat(obs, start_x + 380, HEIGHT // 2 + 50, 130, 18)
+    add_laser(obs, start_x + 590, HEIGHT // 2 - 80, 160, False)
+    add_block(obs, start_x + 680, 20, 55, 60)
     return obs, start_x + L
 
 def chunk_lasers_d(start_x):
-    L = 760
+    L = 780
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_laser(obs, start_x + 80, 20, HEIGHT - 40, True)
-    add_block(obs, start_x + 210, HEIGHT - 80, 55, 60)
-    add_spike(obs, start_x + 340, 20, 70, 22, 'down')
-    add_laser(obs, start_x + 480, 20, HEIGHT - 40, True)
-    add_boost(obs, start_x + 620, HEIGHT - 90)
+    add_laser(obs, start_x + 100, 20, HEIGHT - 40, True)
+    add_block(obs, start_x + 220, HEIGHT - 80, 55, 60)
+    add_buraco_teto(obs, start_x + 340, 220)
+    add_laser(obs, start_x + 600, 20, HEIGHT - 40, True)
+    add_boost(obs, start_x + 670, HEIGHT - 90)
     return obs, start_x + L
 
 
 def chunk_caos_a(start_x):
-    L = 820
+    L = 880
     obs = []
-    add_chao(obs, start_x, 280)
-    add_chao(obs, start_x + 500, L - 500)
-    add_teto(obs, start_x, L)
-    add_block(obs, start_x + 40, HEIGHT - 80, 55, 60)
+    add_plat(obs, start_x + 60, HEIGHT // 2 - 8, 320, 18)
     add_serra(obs, start_x + 200, HEIGHT - 50)
-    add_laser(obs, start_x + 360, HEIGHT // 2 - 60, 120, True)
-    add_plat(obs, start_x + 500, HEIGHT // 2 + 30, 130, 18)
-    add_block(obs, start_x + 680, 20, 55, 60)
-    add_boost(obs, start_x + 750, HEIGHT - 90)
+    add_buraco_chao(obs, start_x + 280, 240)
+    add_laser(obs, start_x + 540, HEIGHT // 2 - 60, 120, True)
+    for col in range(3):
+        add_grid(obs, start_x + 620 + col * 50, 100)
+    add_boost(obs, start_x + 800, HEIGHT - 90)
     return obs, start_x + L
 
 def chunk_caos_b(start_x):
-    L = 840
+    L = 900
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, 300)
-    add_teto(obs, start_x + 540, L - 540)
-    add_serra(obs, start_x + 40, 6)
-    add_spike(obs, start_x + 180, HEIGHT - 42, 70, 22, 'up')
-    add_block(obs, start_x + 320, HEIGHT - 80, 55, 60)
-    add_laser(obs, start_x + 460, HEIGHT // 2 - 70, 140, False)
-    add_serra(obs, start_x + 620, HEIGHT - 50)
-    add_plat(obs, start_x + 720, HEIGHT // 2 + 20, 110, 22)
+    add_serra(obs, start_x + 60, 6)
+    add_buraco_teto(obs, start_x + 140, 240)
+    for col in range(3):
+        add_grid(obs, start_x + 420 + col * 50, HEIGHT - 100)
+    add_laser(obs, start_x + 600, HEIGHT // 2 - 70, 140, False)
+    add_buraco_chao(obs, start_x + 700, 220)
     return obs, start_x + L
 
 def chunk_caos_c(start_x):
-    L = 820
+    L = 880
     obs = []
-    add_chao(obs, start_x, 250)
-    add_chao(obs, start_x + 480, L - 480)
-    add_teto(obs, start_x, 250)
-    add_teto(obs, start_x + 480, L - 480)
-    add_block(obs, start_x + 40, 20, 55, 80)
-    add_laser(obs, start_x + 180, 20, HEIGHT - 40, True)
-    add_serra(obs, start_x + 320, HEIGHT - 50)
-    add_plat(obs, start_x + 280, HEIGHT // 2 - 10, 180, 14)
-    add_spike(obs, start_x + 540, 20, 70, 22, 'down')
-    add_block(obs, start_x + 680, HEIGHT - 70, 55, 50)
-    add_boost(obs, start_x + 740, HEIGHT // 2 - 18)
+    add_plat(obs, start_x + 60, HEIGHT // 2 - 8, 400, 18)
+    add_spike(obs, start_x + 100, HEIGHT // 2 - 30, 80, 22, 'up')
+    add_spike(obs, start_x + 280, HEIGHT // 2 + 10, 80, 22, 'down')
+    add_buraco_chao(obs, start_x + 500, 240)
+    add_laser(obs, start_x + 580, 20, HEIGHT - 40, True)
+    add_serra(obs, start_x + 740, HEIGHT - 50)
+    add_boost(obs, start_x + 820, HEIGHT // 2 - 18)
     return obs, start_x + L
 
 def chunk_caos_d(start_x):
-    L = 840
+    L = 920
     obs = []
-    add_chao(obs, start_x, L)
-    add_teto(obs, start_x, L)
-    add_serra(obs, start_x + 40, HEIGHT - 50)
-    add_block(obs, start_x + 180, 20, 55, 80)
-    add_plat(obs, start_x + 320, HEIGHT // 2, 150, 18)
-    add_serra(obs, start_x + 510, 6)
-    add_spike(obs, start_x + 640, HEIGHT - 42, 70, 22, 'up')
-    add_laser(obs, start_x + 750, HEIGHT // 2 - 50, 100, True)
+    for col in range(2):
+        add_grid(obs, start_x + 80 + col * 50, HEIGHT - 130)
+    add_buraco_chao(obs, start_x + 220, 240)
+    add_laser(obs, start_x + 480, 20, HEIGHT - 40, True)
+    add_serra(obs, start_x + 600, HEIGHT - 50)
+    add_buraco_teto(obs, start_x + 580, 240)
     return obs, start_x + L
 
 
 SPIKE_H = 20
 
-def chunk_inicial_todas_chao(start_x):
+def chunk_inicial_alt_a(start_x):
+    L = 380
     obs = []
-    add_chao(obs, start_x, 350)
-    add_teto(obs, start_x, 350)
-    for f in range(NUM_LANES_VISUAL):
-        y_spike = LANE_BOTTOMS[f] - SPIKE_H
-        add_spike(obs, start_x + 60, y_spike, 50, SPIKE_H, 'up')
-    return obs, start_x + 350
+    add_spike(obs, start_x + 80, LANE_BOTTOMS[0] - SPIKE_H, 50, SPIKE_H, 'up')
+    add_spike(obs, start_x + 80, LANE_BOTTOMS[2] - SPIKE_H, 50, SPIKE_H, 'up')
+    return obs, start_x + L
 
-def chunk_inicial_todas_teto(start_x):
+def chunk_inicial_alt_b(start_x):
+    L = 380
     obs = []
-    add_chao(obs, start_x, 350)
-    add_teto(obs, start_x, 350)
-    for f in range(NUM_LANES_VISUAL):
-        y_spike = LANE_TOPS[f]
-        add_spike(obs, start_x + 60, y_spike, 50, SPIKE_H, 'down')
-    return obs, start_x + 350
+    add_spike(obs, start_x + 80, LANE_TOPS[1], 50, SPIKE_H, 'down')
+    add_spike(obs, start_x + 80, LANE_TOPS[3], 50, SPIKE_H, 'down')
+    return obs, start_x + L
 
-def chunk_inicial_alternado(start_x):
+def chunk_inicial_alt_c(start_x):
+    L = 380
     obs = []
-    add_chao(obs, start_x, 350)
-    add_teto(obs, start_x, 350)
-    for f in range(NUM_LANES_VISUAL):
-        if f % 2 == 0:
-            y_spike = LANE_BOTTOMS[f] - SPIKE_H
-            add_spike(obs, start_x + 60, y_spike, 50, SPIKE_H, 'up')
-        else:
-            y_spike = LANE_TOPS[f]
-            add_spike(obs, start_x + 60, y_spike, 50, SPIKE_H, 'down')
-    return obs, start_x + 350
+    add_spike(obs, start_x + 80, LANE_BOTTOMS[1] - SPIKE_H, 50, SPIKE_H, 'up')
+    add_spike(obs, start_x + 80, LANE_TOPS[2], 50, SPIKE_H, 'down')
+    return obs, start_x + L
 
-def chunk_inicial_zigzag(start_x):
+def chunk_inicial_vazio(start_x):
+    L = 380
     obs = []
-    add_chao(obs, start_x, 560)
-    add_teto(obs, start_x, 560)
-    for f in range(NUM_LANES_VISUAL):
-        y_spike = LANE_BOTTOMS[f] - SPIKE_H
-        add_spike(obs, start_x + 60 + f * 120, y_spike, 50, SPIKE_H, 'up')
-    return obs, start_x + 560
+    return obs, start_x + L
 
 
 CHUNKS_INICIAIS = [
-    chunk_inicial_todas_chao, chunk_inicial_todas_teto,
-    chunk_inicial_alternado, chunk_inicial_zigzag,
+    chunk_inicial_alt_a, chunk_inicial_alt_b,
+    chunk_inicial_alt_c, chunk_inicial_vazio,
 ]
 
 
@@ -850,14 +822,14 @@ MAPAS_CONFIG = {
     MAPA_DENSO: {
         'nome': 'DENSO',
         'pool': [chunk_denso_a, chunk_denso_b, chunk_denso_c, chunk_denso_d],
-        'cor_fundo': (250, 200, 180),
-        'cor_linhas': (230, 180, 160),
+        'cor_fundo': (180, 230, 170),
+        'cor_linhas': (160, 210, 150),
     },
     MAPA_CORREDOR: {
         'nome': 'CORREDOR',
         'pool': [chunk_corredor_a, chunk_corredor_b, chunk_corredor_c, chunk_corredor_d],
-        'cor_fundo': (200, 250, 200),
-        'cor_linhas': (180, 230, 180),
+        'cor_fundo': (250, 200, 180),
+        'cor_linhas': (230, 180, 160),
     },
     MAPA_SERRAS: {
         'nome': 'SERRAS',
@@ -942,8 +914,8 @@ def menu_mapa():
     selecionando = True
     mapa = None
     cores_mapas = [
-        (220, 180, 60), (90, 160, 220), (220, 120, 80),
-        (80, 200, 100), (130, 130, 180), (180, 60, 200), (180, 30, 60),
+        (220, 180, 60), (90, 160, 220), (100, 180, 90),
+        (220, 120, 80), (130, 130, 180), (180, 60, 200), (180, 30, 60),
     ]
     while selecionando:
         clock.tick(FPS)
@@ -1003,8 +975,7 @@ def tela_fim(mensagem, cor):
         pygame.display.update()
 
 
-def spawnar_chunk(prox_x, blocks, spikes, serras, lasers, boosts, all_sprites, pool):
-    chunk_func = random.choice(pool)
+def spawnar_chunk(prox_x, blocks, spikes, serras, lasers, boosts, buracos, all_sprites, chunk_func, cor_fundo):
     obs_list, novo_x = chunk_func(prox_x)
     for o in obs_list:
         tipo = o[0]
@@ -1014,21 +985,16 @@ def spawnar_chunk(prox_x, blocks, spikes, serras, lasers, boosts, all_sprites, p
             b = Block(x, y, w, h, cor)
             blocks.add(b)
             all_sprites.add(b)
+        elif tipo == 'grid':
+            _, x, y = o
+            g = BlocoGrid(x, y)
+            blocks.add(g)
+            all_sprites.add(g)
         elif tipo == 'plat':
             _, x, y, w, altura = o
             p = Plataforma(x, y, w, altura)
             blocks.add(p)
             all_sprites.add(p)
-        elif tipo == 'chao':
-            _, x, w = o
-            c = PedacoChao(x, w)
-            blocks.add(c)
-            all_sprites.add(c)
-        elif tipo == 'teto':
-            _, x, w = o
-            t = PedacoTeto(x, w)
-            blocks.add(t)
-            all_sprites.add(t)
         elif tipo == 'spike':
             _, x, y, w, h, direcao = o
             s = Spike(x, y, w, h, direcao)
@@ -1048,6 +1014,16 @@ def spawnar_chunk(prox_x, blocks, spikes, serras, lasers, boosts, all_sprites, p
             _, x, y = o
             b = BoostArrow(x, y)
             boosts.add(b)
+            all_sprites.add(b)
+        elif tipo == 'buraco_chao':
+            _, x, w = o
+            b = BuracoChao(x, w, cor_fundo)
+            buracos.add(b)
+            all_sprites.add(b)
+        elif tipo == 'buraco_teto':
+            _, x, w = o
+            b = BuracoTeto(x, w, cor_fundo)
+            buracos.add(b)
             all_sprites.add(b)
     return novo_x
 
@@ -1086,15 +1062,15 @@ spikes = pygame.sprite.Group()
 serras = pygame.sprite.Group()
 lasers = pygame.sprite.Group()
 boosts = pygame.sprite.Group()
+buracos = pygame.sprite.Group()
 finish_group = pygame.sprite.Group()
-prox_chunk_x = WIDTH + 200
 
-chao_inicial = PedacoChao(-100, WIDTH + 200)
-blocks.add(chao_inicial)
-all_sprites.add(chao_inicial)
-teto_inicial = PedacoTeto(-100, WIDTH + 200)
-blocks.add(teto_inicial)
-all_sprites.add(teto_inicial)
+chao_fixo = ChaoTetoFixo(HEIGHT - 20)
+blocks.add(chao_fixo)
+teto_fixo = ChaoTetoFixo(0)
+blocks.add(teto_fixo)
+
+prox_chunk_x = WIDTH + 50
 
 plataformas_iniciais = pygame.sprite.Group()
 for i in range(1, NUM_LANES_VISUAL):
@@ -1137,7 +1113,7 @@ while game:
         kills_group.add(l)
 
     for player in players:
-        player.update(players, blocks, kills_group, scrolling)
+        player.update(players, blocks, kills_group, buracos, scrolling)
         if barrier_active and player.rect.right > barrier_x:
             player.rect.right = barrier_x
 
@@ -1150,6 +1126,7 @@ while game:
         serras.update()
         lasers.update()
         boosts.update()
+        buracos.update()
         finish_group.update()
 
         tempo_corrida = pygame.time.get_ticks() - scroll_start_time
@@ -1160,7 +1137,7 @@ while game:
             finish_group.add(fl)
 
             for b in list(blocks):
-                if isinstance(b, (PlataformaInicial, PedacoChao, PedacoTeto)):
+                if isinstance(b, (PlataformaInicial, ChaoTetoFixo)):
                     continue
                 if b.rect.left > WIDTH:
                     b.kill()
@@ -1174,6 +1151,9 @@ while game:
                 if l.rect.left > WIDTH:
                     l.kill()
             for b in list(boosts):
+                if b.rect.left > WIDTH:
+                    b.kill()
+            for b in list(buracos):
                 if b.rect.left > WIDTH:
                     b.kill()
 
@@ -1199,14 +1179,14 @@ while game:
             if prox_chunk_x <= WIDTH:
                 plataforma_ainda_visivel = False
                 for plat in plataformas_iniciais:
-                    if plat.rect.right > WIDTH:
+                    if plat.rect.right > WIDTH - 100:
                         plataforma_ainda_visivel = True
                         break
                 if plataforma_ainda_visivel:
-                    pool = CHUNKS_INICIAIS
+                    chunk_func = random.choice(CHUNKS_INICIAIS)
                 else:
-                    pool = config['pool']
-                prox_chunk_x = spawnar_chunk(WIDTH + 50, blocks, spikes, serras, lasers, boosts, all_sprites, pool)
+                    chunk_func = random.choice(config['pool'])
+                prox_chunk_x = spawnar_chunk(WIDTH + 50, blocks, spikes, serras, lasers, boosts, buracos, all_sprites, chunk_func, config['cor_fundo'])
 
     window.fill(config['cor_fundo'])
     for x in range(-40, WIDTH + 40, 40):
@@ -1218,6 +1198,8 @@ while game:
             pygame.draw.rect(window, (255, 220, 0), (barrier_x, stripe_y, 12, 15))
 
     for sprite in blocks:
+        window.blit(sprite.image, sprite.rect)
+    for sprite in buracos:
         window.blit(sprite.image, sprite.rect)
     for sprite in boosts:
         window.blit(sprite.image, sprite.rect)
