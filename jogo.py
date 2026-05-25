@@ -966,21 +966,56 @@ def menu_mapa():
     return mapa
 
 
-def tela_fim(mensagem, cor):
+def tela_fim(mensagem, cor, bg):
     showing = True
+    resultado = None
     while showing:
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                resultado = 'fechar'
                 showing = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mx, my = event.pos
+                # botão jogar novamente
+                if 150 <= mx <= 370 and 380 <= my <= 450:
+                    resultado = 'jogar'
+                    showing = False
+                # botão fechar
+                if 430 <= mx <= 650 and 380 <= my <= 450:
+                    resultado = 'fechar'
+                    showing = False
             if event.type == pygame.KEYDOWN:
-                showing = False
-        window.fill((20, 20, 20))
+                if event.key == pygame.K_RETURN:
+                    resultado = 'jogar'
+                    showing = False
+                if event.key == pygame.K_ESCAPE:
+                    resultado = 'fechar'
+                    showing = False
+
+        window.blit(bg, (0, 0))
+
+        overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 120))
+        window.blit(overlay, (0, 0))
+
         txt = font_huge.render(mensagem, True, cor)
-        window.blit(txt, (WIDTH // 2 - txt.get_width() // 2, HEIGHT // 2 - txt.get_height() // 2))
-        sub = font_small.render('Pressione qualquer tecla para sair', True, (200, 200, 200))
-        window.blit(sub, (WIDTH // 2 - sub.get_width() // 2, HEIGHT // 2 + 100))
+        window.blit(txt, (WIDTH // 2 - txt.get_width() // 2, 150))
+
+        # botão jogar novamente
+        pygame.draw.rect(window, (60, 180, 60), (150, 380, 220, 70), border_radius=12)
+        pygame.draw.rect(window, (255, 255, 255), (150, 380, 220, 70), 3, border_radius=12)
+        label = font_med.render('JOGAR DNV', True, (255, 255, 255))
+        window.blit(label, (260 - label.get_width() // 2, 403))
+
+        # botão fechar
+        pygame.draw.rect(window, (180, 60, 60), (430, 380, 220, 70), border_radius=12)
+        pygame.draw.rect(window, (255, 255, 255), (430, 380, 220, 70), 3, border_radius=12)
+        label2 = font_med.render('FECHAR', True, (255, 255, 255))
+        window.blit(label2, (540 - label2.get_width() // 2, 403))
+
         pygame.display.update()
+    return resultado
 
 
 def spawnar_chunk(prox_x, blocks, spikes, serras, lasers, boosts, buracos, all_sprites, chunk_func, cor_fundo):
@@ -1261,8 +1296,9 @@ if vencedor is not None:
         (255, 200, 0): 'AMARELO',
     }
     nome = nome_cores.get(vencedor.color, f'P{vencedor.player_id}')
-    tela_fim(f'{nome} VENCEU!', vencedor.color)
+    resultado = tela_fim(f'{nome} VENCEU!', vencedor.color, bg_vitoria)
 else:
-    tela_fim('GAME OVER', (255, 60, 60))
+    resultado = tela_fim('GAME OVER', (255, 60, 60), bg_game_over)
 
-pygame.quit()
+if resultado == 'fechar':
+    pygame.quit()
