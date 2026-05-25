@@ -154,11 +154,14 @@ class Player(pygame.sprite.Sprite):
 
 
 class Block(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, height, color=(200, 100, 100)):
+    def __init__(self, x, y, width, height, bloco_img=None):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface((width, height))
-        self.image.fill(color)
-        pygame.draw.rect(self.image, (0, 0, 0), (0, 0, width, height), 2)
+        if bloco_img:
+            self.image = pygame.transform.scale(bloco_img, (width, height))
+        else:
+            self.image = pygame.Surface((width, height))
+            self.image.fill((200, 100, 100))
+            pygame.draw.rect(self.image, (0, 0, 0), (0, 0, width, height), 2)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -167,7 +170,6 @@ class Block(pygame.sprite.Sprite):
         self.rect.x -= SCROLL_SPEED
         if self.rect.right < -200:
             self.kill()
-
 
 class BlocoGrid(pygame.sprite.Sprite):
     def __init__(self, x, y):
