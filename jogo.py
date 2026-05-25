@@ -805,6 +805,7 @@ MAPAS_CONFIG = {
         'cor_fundo': (255, 240, 150),
         'cor_linhas': (240, 220, 130),
         'bg': 'bg_classico.png',
+        'chao': 'farm_ground_tile.png',
     },
     MAPA_AEREO: {
         'nome': 'AEREO',
@@ -812,6 +813,7 @@ MAPAS_CONFIG = {
         'cor_fundo': (190, 220, 240),
         'cor_linhas': (170, 200, 220),
         'bg': 'bg_aereo.png',
+        'chao': 'cloud_ground_tile.png',
     },
     MAPA_CORREDOR: {
         'nome': 'CORREDOR',
@@ -819,6 +821,7 @@ MAPAS_CONFIG = {
         'cor_fundo': (250, 200, 180),
         'cor_linhas': (230, 180, 160),
         'bg': 'bg_corredor.png',
+        'chao': 'backrooms_floor_tile.png',
     },
     MAPA_SERRAS: {
         'nome': 'SERRAS',
@@ -826,6 +829,7 @@ MAPAS_CONFIG = {
         'cor_fundo': (200, 200, 220),
         'cor_linhas': (180, 180, 200),
         'bg': 'bg_serras.png',
+        'chao': 'wooden_floor_tile.png',
     },
 }
 
@@ -1011,6 +1015,10 @@ mapa_escolhido = menu_mapa()
 config = MAPAS_CONFIG[mapa_escolhido]
 bg_image = pygame.image.load(config['bg']).convert()
 bg_image = pygame.transform.scale(bg_image, (WIDTH, HEIGHT))
+chao_img = pygame.image.load(config['chao']).convert()
+teto_img = pygame.transform.flip(chao_img, False, True)
+tubo_chao_img = pygame.image.load('tubo_chao.png').convert_alpha()
+tubo_teto_img = pygame.image.load('tubo_teto.png').convert_alpha()
 
 all_sprites = pygame.sprite.Group()
 players = pygame.sprite.Group()
@@ -1181,9 +1189,20 @@ while game:
             pygame.draw.rect(window, (255, 220, 0), (barrier_x, stripe_y, 12, 15))
 
     for sprite in blocks:
+        if isinstance(sprite, ChaoTetoFixo):
+            if sprite.rect.y == 0:
+                window.blit(teto_img, (0, 0))
+            else:
+                window.blit(chao_img, (0, HEIGHT - 20))
+            continue
         window.blit(sprite.image, sprite.rect)
     for sprite in buracos:
-        window.blit(sprite.image, sprite.rect)
+        if isinstance(sprite, BuracoChao):
+            x = sprite.rect.x + sprite.rect.width // 2 - 30
+            window.blit(tubo_chao_img, (x, HEIGHT - 80))
+        elif isinstance(sprite, BuracoTeto):
+            x = sprite.rect.x + sprite.rect.width // 2 - 30
+            window.blit(tubo_teto_img, (x, 0))
     for sprite in boosts:
         window.blit(sprite.image, sprite.rect)
     for sprite in spikes:
