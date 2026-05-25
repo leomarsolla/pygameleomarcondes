@@ -9,6 +9,7 @@ pygame.init()
 window = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Defying Gravity')
 
+# Imagens de fundo das telas 
 bg_menu_players = pygame.image.load('assets/chicken_bg.png').convert()
 bg_menu_mapa = pygame.image.load('assets/maps_bg.png').convert()
 bg_vitoria = pygame.image.load('assets/podium_bg.png').convert()
@@ -23,17 +24,23 @@ font_small = pygame.font.SysFont(None, 28)
 font_tiny = pygame.font.SysFont(None, 22)
 
 
+# Tela inicial (1 a 4 playerss)
 def menu_selecao():
     selecionando = True
     num = None
+
+    # Musica do menu- loop infinito (-1)
     pygame.mixer.music.load('assets/menu.mpeg')
-    pygame.mixer.music.play(-1)  # -1 = loop infinito
+    pygame.mixer.music.play(-1)
+
     while selecionando:
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
+
+            # Detecta clique do mouse em cada um dos 4 botoes
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mx, my = event.pos
                 for i in range(4):
@@ -42,6 +49,8 @@ def menu_selecao():
                     if box_x <= mx <= box_x + 160 and box_y <= my <= box_y + 80:
                         num = i + 1
                         selecionando = False
+
+            # Atalhos pelo teclado (1, 2, 3, 4)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_1: num = 1; selecionando = False
                 if event.key == pygame.K_2: num = 2; selecionando = False
@@ -49,13 +58,18 @@ def menu_selecao():
                 if event.key == pygame.K_4: num = 4; selecionando = False
 
         window.blit(bg_menu_players, (0, 0))
+
+        # Camada preta semi-transparente em cima do bg pra destacar o texto
         overlay = pygame.Surface((WIDTH, 120), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 150))
         window.blit(overlay, (0, 0))
+
         titulo = font_big.render('DEFYING GRAVITY', True, (255, 220, 50))
         window.blit(titulo, (WIDTH // 2 - titulo.get_width() // 2, 20))
         sub = font_small.render('Escolha quantos jogadores', True, (255, 255, 255))
         window.blit(sub, (WIDTH // 2 - sub.get_width() // 2, 90))
+
+        # Desenha os 4 botoes de quantidade de jogadores em cores diferentes
         cores_box = [(200, 60, 60), (60, 120, 220), (60, 180, 90), (230, 180, 30)]
         for i in range(4):
             box_x = 60 + i * 185
@@ -64,23 +78,28 @@ def menu_selecao():
             pygame.draw.rect(window, (255, 255, 255), (box_x, box_y, 160, 80), 3, border_radius=12)
             label = font_big.render(f'{i+1}P', True, (255, 255, 255))
             window.blit(label, (box_x + 80 - label.get_width() // 2, box_y + 18))
+
         rodape = font_small.render('Clique ou pressione 1, 2, 3 ou 4', True, (220, 220, 220))
         window.blit(rodape, (WIDTH // 2 - rodape.get_width() // 2, 430))
         pygame.display.update()
     return num
 
 
+# Tela onde o jogador escolhe qual mapa quer jogar
 def menu_mapa():
     selecionando = True
     mapa = None
     cores_mapas = [(220, 180, 60), (90, 160, 220), (220, 120, 80), (130, 130, 180)]
     nomes_mapas = ['CLASSICO', 'AEREO', 'CORREDOR', 'SERRAS']
+
     while selecionando:
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
+
+            # Os botoes ficam em uma grade 2x2 (2 colunas, 2 linhas)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mx, my = event.pos
                 for i in range(4):
@@ -121,6 +140,7 @@ def menu_mapa():
     return mapa
 
 
+# Tela final - jogar dnv ou pra parar
 def tela_fim(mensagem, cor, bg):
     showing = True
     resultado = None
@@ -130,6 +150,8 @@ def tela_fim(mensagem, cor, bg):
             if event.type == pygame.QUIT:
                 resultado = 'fechar'
                 showing = False
+
+            # Verifica se o clique foi no botao JOGAR DNV (verde) ou FECHAR (vermelho)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mx, my = event.pos
                 if 150 <= mx <= 370 and 380 <= my <= 450:
@@ -138,6 +160,8 @@ def tela_fim(mensagem, cor, bg):
                 if 430 <= mx <= 650 and 380 <= my <= 450:
                     resultado = 'fechar'
                     showing = False
+
+            # Atalhos: Enter para jogar de novo, Esc para fechar
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     resultado = 'jogar'
@@ -164,6 +188,8 @@ def tela_fim(mensagem, cor, bg):
     return resultado
 
 
+# Pega a lista de obstaculos que um chunk descreve e cria os sprites de verdade
+# Bloco vira a sua classe
 def spawnar_chunk(prox_x, blocks, spikes, serras, lasers, boosts, buracos, all_sprites, chunk_func, cor_fundo, bloco_img):
     obs_list, novo_x = chunk_func(prox_x)
     for o in obs_list:
@@ -207,8 +233,11 @@ def spawnar_chunk(prox_x, blocks, spikes, serras, lasers, boosts, buracos, all_s
     return novo_x
 
 
+# Funcao principal que roda uma partida do jogo
 def jogar(num_players, mapa_escolhido):
     config = MAPAS_CONFIG[mapa_escolhido]
+
+    # Carrega as imagens visuais dos mapas
     bg_image = pygame.image.load(config['bg']).convert()
     bg_image = pygame.transform.scale(bg_image, (WIDTH, HEIGHT))
     chao_img = pygame.image.load(config['chao']).convert_alpha()
@@ -216,6 +245,8 @@ def jogar(num_players, mapa_escolhido):
     buraco_img = pygame.image.load('assets/buraco.png').convert_alpha()
     buraco_img = pygame.transform.scale(buraco_img, (220, 20))
     bloco_img = pygame.image.load(config['bloco']).convert_alpha()
+
+    # musica dos maapas
     musicas = {
         MAPA_CLASSICO: 'assets/fazenda.mpeg',
         MAPA_AEREO: 'assets/aereo.mpeg',
@@ -227,6 +258,8 @@ def jogar(num_players, mapa_escolhido):
 
     all_sprites = pygame.sprite.Group()
     players = pygame.sprite.Group()
+
+    # raias certas pros jogadores
     faixas_escolhidas = posicoes_por_qnt[num_players]
     for i, faixa in enumerate(faixas_escolhidas):
         lane_top = LANE_TOPS[faixa]
@@ -234,12 +267,16 @@ def jogar(num_players, mapa_escolhido):
         p = Player(i + 1, PLAYER_COLORS[i], PLAYER_KEYS[i], lane_top, lane_bottom)
         all_sprites.add(p); players.add(p)
 
+    # barreira q impede os players antes do comeco (GO)
     barrier_x = 220
     barrier_active = True
     countdown_start = pygame.time.get_ticks()
     COUNTDOWN_DURATION = 3000
+
     scrolling = False
     bg_offset = 0
+
+    # Cada tipo de obstaculo tem seu proprio grupo pra facilitar colisoes
     blocks = pygame.sprite.Group()
     spikes = pygame.sprite.Group()
     serras = pygame.sprite.Group()
@@ -247,33 +284,42 @@ def jogar(num_players, mapa_escolhido):
     boosts = pygame.sprite.Group()
     buracos = pygame.sprite.Group()
     finish_group = pygame.sprite.Group()
+
+    # Chao e teto ficam fixos pra n ter uns buraquinhos
     chao_fixo = ChaoTetoFixo(HEIGHT - 20)
     blocks.add(chao_fixo)
     teto_fixo = ChaoTetoFixo(0)
     blocks.add(teto_fixo)
     prox_chunk_x = WIDTH + 50
+
+    # linhas divisorias
     plataformas_iniciais = pygame.sprite.Group()
     for i in range(1, NUM_LANES_VISUAL):
         y = i * LANE_HEIGHT
         plat = PlataformaInicial(y, LANE_LINES_LENGTH)
         plataformas_iniciais.add(plat); blocks.add(plat)
+
     scroll_start_time = None
     finish_spawned = False
     vencedor = None
     bg_x = 0
     game = True
 
+    # Loop principal do jogo
     while game:
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
+
+            # tecla de cada playerrs
             if event.type == pygame.KEYDOWN:
                 for player in players:
                     if event.key == player.flip_key:
                         player.flip_gravity()
 
+        # contdown acaba libera a barreira e o mapa vai pra esquerda
         elapsed = pygame.time.get_ticks() - countdown_start
         if barrier_active and elapsed >= COUNTDOWN_DURATION:
             barrier_active = False
@@ -282,6 +328,7 @@ def jogar(num_players, mapa_escolhido):
             for plat in plataformas_iniciais:
                 plat.scrolling = True
 
+        # Junta tudo que pode matar o player em um unico grupo
         kills_group = pygame.sprite.Group()
         for s in spikes: kills_group.add(s)
         for s in serras: kills_group.add(s)
@@ -289,8 +336,12 @@ def jogar(num_players, mapa_escolhido):
 
         for player in players:
             player.update(players, blocks, kills_group, buracos, scrolling)
+
+            # Trava o player na barreira durante o countdown
             if barrier_active and player.rect.right > barrier_x:
                 player.rect.right = barrier_x
+
+            # Se o player encostou no boost, ele recebe o efeito e o boost some
             for boost in pygame.sprite.spritecollide(player, boosts, True):
                 player.ativar_boost()
 
@@ -298,7 +349,10 @@ def jogar(num_players, mapa_escolhido):
             blocks.update(); spikes.update(); serras.update()
             lasers.update(); boosts.update(); buracos.update()
             finish_group.update()
+
             tempo_corrida = pygame.time.get_ticks() - scroll_start_time
+
+            # Depois de 30s, spawna a linha de chegada e limpa obstaculos 
             if not finish_spawned and tempo_corrida >= TEMPO_ATE_FINISH:
                 finish_spawned = True
                 fl = FinishLine(WIDTH + 100)
@@ -316,12 +370,16 @@ def jogar(num_players, mapa_escolhido):
                     if b.rect.left > WIDTH: b.kill()
                 for b in list(buracos):
                     if b.rect.left > WIDTH: b.kill()
+
+            # Quem cruzar a linha de chegada primeiro vence
             for player in players:
                 for fl in finish_group:
                     if player.rect.colliderect(fl.rect):
                         player.venceu = True
                         vencedor = player
                         game = False
+
+            # ultimo q sobreviver vence
             vivos = [p for p in players if p.alive]
             if num_players > 1 and len(vivos) == 1:
                 vencedor = vivos[0]; vencedor.venceu = True; game = False
@@ -329,10 +387,14 @@ def jogar(num_players, mapa_escolhido):
                 game = False
 
         if scrolling:
+            # bg_x faz a imagem de fundo rolar continuamente em loop
             bg_offset = (bg_offset + SCROLL_SPEED) % 40
             bg_x -= SCROLL_SPEED
             if bg_x <= -WIDTH:
                 bg_x += WIDTH
+
+            # Spawna novo chunk quando o anterior chega na tela
+            # Enquanto as plataformas iniciais estao visiveis, usa chunks faceis
             if not finish_spawned:
                 prox_chunk_x -= SCROLL_SPEED
                 if prox_chunk_x <= WIDTH:
@@ -340,12 +402,17 @@ def jogar(num_players, mapa_escolhido):
                     chunk_func = random.choice(CHUNKS_INICIAIS) if plataforma_ainda_visivel else random.choice(config['pool'])
                     prox_chunk_x = spawnar_chunk(WIDTH + 50, blocks, spikes, serras, lasers, boosts, buracos, all_sprites, chunk_func, config['cor_fundo'], bloco_img)
 
+        # Desenha o fundo duas vezes lado a lado pra dar a ilusao de scroll infinito
         window.blit(bg_image, (bg_x, 0))
         window.blit(bg_image, (bg_x + WIDTH, 0))
+
+        # Barreira amarela e preta do countdown
         if barrier_active:
             pygame.draw.rect(window, (40, 40, 40), (barrier_x, 0, 12, HEIGHT))
             for stripe_y in range(0, HEIGHT, 30):
                 pygame.draw.rect(window, (255, 220, 0), (barrier_x, stripe_y, 12, 15))
+
+        # Desenha os blocos usando a textura 
         for sprite in blocks:
             if isinstance(sprite, ChaoTetoFixo):
                 if sprite.rect.y == 0:
@@ -354,6 +421,8 @@ def jogar(num_players, mapa_escolhido):
                     window.blit(chao_img, (0, HEIGHT - 20))
                 continue
             window.blit(sprite.image, sprite.rect)
+
+        # Os buracos do chao e do teto
         for sprite in buracos:
             if isinstance(sprite, BuracoChao):
                 x = sprite.rect.x + sprite.rect.width // 2 - 110
@@ -361,12 +430,15 @@ def jogar(num_players, mapa_escolhido):
             elif isinstance(sprite, BuracoTeto):
                 x = sprite.rect.x + sprite.rect.width // 2 - 110
                 window.blit(buraco_img, (x, 0))
+
         for sprite in boosts: window.blit(sprite.image, sprite.rect)
         for sprite in spikes: window.blit(sprite.image, sprite.rect)
         for sprite in lasers: window.blit(sprite.image, sprite.rect)
         for sprite in serras: window.blit(sprite.image, sprite.rect)
         for sprite in finish_group: window.blit(sprite.image, sprite.rect)
         for sprite in players: window.blit(sprite.image, sprite.rect)
+
+        # Numeros 3, 2, 1 do countdown e o GO! depois
         if barrier_active:
             secs_left = (COUNTDOWN_DURATION - elapsed) // 1000 + 1
             if secs_left > 0:
@@ -375,11 +447,13 @@ def jogar(num_players, mapa_escolhido):
         elif elapsed < COUNTDOWN_DURATION + 800:
             go_text = font_huge.render('GO!', True, (60, 200, 60))
             window.blit(go_text, (WIDTH // 2 - go_text.get_width() // 2, HEIGHT // 2 - go_text.get_height() // 2))
+
         pygame.display.update()
 
     return vencedor
 
 
+# Converte a cor RGB do player vencedor pro nome em portugues que vai aparecer na tela
 nome_cores = {
     (255, 80, 80): 'VERMELHO',
     (70, 130, 255): 'AZUL',
@@ -387,6 +461,7 @@ nome_cores = {
     (255, 200, 0): 'AMARELO',
 }
 
+# Loop principal do programa: roda o jogo varias vezes ate clicar em FECHAR
 rodando = True
 while rodando:
     num_players = menu_selecao()
